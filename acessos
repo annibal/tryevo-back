@@ -1,0 +1,11 @@
+FTP / SSH:
+  user: tryevo
+  pass: voo1DAR_coox*zon
+  url: ftp.tryevo.com.br
+  url2: ftp.nodejs10f02.kinghost.net
+
+MongoDB:
+  user: tryevo01
+  pass: voo1DAR_coox*zon
+  url: mongodb.tryevo.com.br
+  db: tryevo01
