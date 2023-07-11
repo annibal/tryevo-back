@@ -1,10 +1,7 @@
 const mongoose = require("mongoose");
+const config = require("./config");
 
-const username = 'tryevo01';
-const password = 'voo1DAR_coox*zon';
-const cluster = 'mongodb.tryevo.com.br';
-const dbName = 'tryevo01';
-const uri = `mongodb://${username}:${encodeURIComponent(password)}@${cluster}/${dbName}?retryWrites=true&w=majority`;
+const uri = `mongodb://${config.username}:${encodeURIComponent(config.password)}@${config.cluster}/${config.dbName}?retryWrites=true&w=majority`;
 
 mongoose.connect(uri, {
   useNewUrlParser: true,
@@ -13,7 +10,7 @@ mongoose.connect(uri, {
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error: "));
 db.once("open", function () {
-  console.log("Connected successfully");
+  console.log(`Connected to DB at ${config.cluster}/${config.dbName}`);
 });
 
 module.exports = db;

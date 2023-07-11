@@ -6,7 +6,7 @@ const resDotSendInterceptor = (res, send) => (content) => {
 
 function logger(req, res, next) {
   // incoming
-  let str = `>: ${req.method} ${req.hostname}${req.url}`;
+  let str = `RECV: ${req.method} ${req.url}`;
   
   try {
     str += ' body=' + JSON.stringify(req.body);
@@ -26,7 +26,11 @@ function logger(req, res, next) {
   res.send = resDotSendInterceptor(res, res.send);
   
   res.on("finish", () => {
-    console.log(">: SEND", res.contentBody);
+    let x = res.contentBody;
+    try {
+      x = JSON.stringify(x);
+    } catch (e) {}
+    console.log(`SEND: ${res.statusCode}`, x, '\n');
   });
 
   next();

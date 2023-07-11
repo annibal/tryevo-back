@@ -1,2 +1,3 @@
-const app = require('./src/app')
-const db = require('./src/db')
+require('./api.js');
+
+console.log('Loaded index.js');

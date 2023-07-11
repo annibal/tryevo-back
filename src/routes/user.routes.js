@@ -1,10 +1,13 @@
 const express = require("express");
 const app = express();
 const userModel = require("../models/user.model");
+const id6 = require("../helpers/id6");
 
 app.post("/add_user", async (req, res) => {
-  console.log(req.body)
-  const user = new userModel(req.body);
+  
+  const data = req.body;
+  data._id = id6();
+  const user = new userModel(data);
 
   try {
     await user.save();
