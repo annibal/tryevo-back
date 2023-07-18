@@ -1,5 +1,4 @@
 const SchemaFactory = require("./base.schema");
-const QualificacaoSchema = require("./qualificacao.schema");
 
 const ExperienciaProfissionalSchema = SchemaFactory({
   cargo: { type: String, required: true },
@@ -8,7 +7,7 @@ const ExperienciaProfissionalSchema = SchemaFactory({
   inicio: { type: String, required: true },
   fim: { type: String },
   isAtual: { type: String },
-  qualificacoes: { type: [ QualificacaoSchema ] },
+  qualificacoes: { type: [ String ] },
 });
 
 module.exports = ExperienciaProfissionalSchema;

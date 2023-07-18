@@ -4,7 +4,6 @@ const ProjetosPessoaisSchema = require("./projetos-pessoais.schema");
 const EscolaridadeSchema = require("./escolaridade.schema");
 const ExperienciaProfissionalSchema = require("./experiencia-profissional.schema");
 const EnderecoSchema = require("./endereco.schema");
-const QualificacaoSchema = require("./qualificacao.schema");
 
 const PFSchema = SchemaFactory({
   nomePrimeiro: { type: String },
@@ -15,22 +14,22 @@ const PFSchema = SchemaFactory({
   nacionalidade: { type: String },
   nascimento: { type: Date },
   
+  endereco: { type: EnderecoSchema },
+  
+  isAleijado: { type: Boolean, default: false },
+  aceitaTrabalharDistancia: { type: Number, default: 0, },
+  aceitaMudarDistancia: { type: Number, default: 0, },
+  isPsiquiatra: { type: Boolean, default: false },
+
   telefones: { type: [ ManySchema ] },
   links: { type: [ ManySchema ] },
   documentos: { type: [ ManySchema ] },
-  enderecos: { type: [ EnderecoSchema ] },
-  qualificacoes: { type: [ QualificacaoSchema ] },
+  qualificacoes: { type: [ String ] },
   
   linguagens: { type: [ ManySchema ] },
   projetosPessoais: { type: [ ProjetosPessoaisSchema ] },
   escolaridade: { type: [ EscolaridadeSchema ] },
   experienciaProfissional: { type: [ ExperienciaProfissionalSchema ] },
-  
-  isAleijado: { type: Boolean, default: false },
-  aceitaTrabalharDistancia: { type: Number, default: 0, },
-  aceitaMudarDistancia: { type: Number, default: 0, },
-  isPsiquiatra: { type: Boolean, default: false }
-
 });
 
 module.exports = PFSchema;

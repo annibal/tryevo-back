@@ -12,7 +12,7 @@ const EnderecoSchema = SchemaFactory({
 
   lat: { type: Number },
   lng: { type: Number },
-  isPrincipal: { type: Boolean, default: false },
+  // isPrincipal: { type: Boolean, default: false },
 });
 
 module.exports = EnderecoSchema;

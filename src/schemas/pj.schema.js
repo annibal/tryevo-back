@@ -6,12 +6,12 @@ const PJSchema = SchemaFactory({
   nomeResponsavel: { type: String, required: true },
   razaoSocial: { type: String },
   nomeFantasia: { type: String },
+
+  endereco: { type: EnderecoSchema },
   
   telefones: { type: [ ManySchema ] },
   links: { type: [ ManySchema ] },
   documentos: { type: [ ManySchema ] },
-  enderecos: { type: [ EnderecoSchema ] },
-
 });
 
 module.exports = PJSchema;
