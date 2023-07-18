@@ -10,7 +10,7 @@ mongoose.connect(uri, {
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error: "));
 db.once("open", function () {
-  console.log(`Connected to DB at ${config.cluster}/${config.dbName}`);
+  console.log(`>: db.js Connected at ${config.cluster}/${config.dbName}`);
 });
 
 module.exports = db;

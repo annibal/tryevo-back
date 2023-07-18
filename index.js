@@ -1,3 +1,3 @@
 require('./api.js');
 
-console.log('Loaded index.js');
+console.log('>: loaded index.js');

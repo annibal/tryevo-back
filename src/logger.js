@@ -9,15 +9,19 @@ function logger(req, res, next) {
   let str = `RECV: ${req.method} ${req.url}`;
   
   try {
-    str += ' body=' + JSON.stringify(req.body);
+    str += '\n body=' + JSON.stringify(req.body);
   } catch (e) {}
 
   try {
-    str += ' params=' + JSON.stringify(req.params);
+    str += '\n params=' + JSON.stringify(req.params);
   } catch (e) {}
 
   try {
-    str += ' query=' + JSON.stringify(req.query);
+    str += '\n query=' + JSON.stringify(req.query);
+  } catch (e) {}
+
+  try {
+    str += '\n headers=' + JSON.stringify(req.headers);
   } catch (e) {}
 
   console.log(str);

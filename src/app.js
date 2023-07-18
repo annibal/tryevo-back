@@ -10,7 +10,13 @@ app.use(require('./logger'));
 app.use(require('./routes'));
 
 app.listen(config.port, () => {
-  console.log("App server is running at port " + config.port);
+  console.log(">: app.js: Server running at port " + config.port);
 });
+
+process.on("unhandledRejection", err => {
+  console.log(`>: An error occurred: ${err.message}`)
+  console.trace(err);
+  server.close(() => process.exit(1))
+})
 
 module.exports = app

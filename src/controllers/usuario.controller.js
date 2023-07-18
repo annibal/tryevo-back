@@ -6,6 +6,12 @@ const UsuarioSchema = require("../schemas/usuario.schema");
 
 const UsuarioModel = mongoose.model('Usuario', UsuarioSchema)
 
+
+
+
+
+
+
 app.get("/usuario-schema", async (req, res) => {
   res.send(UsuarioSchema.obj);
 })
@@ -68,20 +74,3 @@ app.get("/usuarios", async (req, res) => {
     res.status(500).send(error);
   }
 });
-
-// Show
-app.get("/usuario/:id", async (req, res) => {
-  try {
-    const usuario = await UsuarioModel.findById(req.params.id);
-    
-    if (!usuario) {
-      res.status(404).send();
-    } else {
-      res.send(usuario);
-    }
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-module.exports = app;
