@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const id6 = require("../helpers/id6");
-const PFModel = require("../models/pf.model");
+const PFSchema = require("../schemas/pf.schema");
 
 
 module.exports = app;

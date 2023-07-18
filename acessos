@@ -4,6 +4,8 @@ FTP / SSH:
   url: ftp.tryevo.com.br
   url2: ftp.nodejs10f02.kinghost.net
 
+  ssh: tryevo@ftp.tryevo.com.br
+
 MongoDB:
   user: tryevo01
   pass: voo1DAR_coox*zon

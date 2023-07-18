@@ -4,7 +4,7 @@ const path = require('path');
 module.exports = {
   entry: './api.js',
   mode: 'development',
-  target: 'node8.11',
+  target: 'node17.9',
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: 'api.js'
@@ -20,10 +20,7 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             presets: [
-              ['@babel/preset-env', { targets: { "node": "8.11" } }]
-            ],
-            plugins: [
-              "babel-plugin-transform-globalthis",
+              ['@babel/preset-env', { targets: { "node": "17.9" } }]
             ],
           }
         }

@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const id6 = require("../helpers/id6");
-const VagaModel = require("../models/vaga.model");
+const VagaSchema = require("../schemas/vaga.schema");
 
 
 module.exports = app;
