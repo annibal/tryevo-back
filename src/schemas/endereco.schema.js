@@ -1,8 +1,6 @@
 const SchemaFactory = require("./base.schema");
 
 const EnderecoSchema = SchemaFactory({
-  _id: { type: String, required: true, },
-  
   cep: { type: String, required: true },
   pais: { type: String, required: true },
   estado: { type: String, required: true },
@@ -15,8 +13,7 @@ const EnderecoSchema = SchemaFactory({
   lat: { type: Number },
   lng: { type: Number },
   isPrincipal: { type: Boolean, default: false },
-
-}, { _id: false });
+});
 
 module.exports = EnderecoSchema;
 

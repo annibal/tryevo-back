@@ -3,8 +3,6 @@ const ManySchema = require("./many.schema");
 const EnderecoSchema = require("./endereco.schema");
 
 const PJSchema = SchemaFactory({
-  _id: { type: String },
-
   nomeResponsavel: { type: String, required: true },
   razaoSocial: { type: String },
   nomeFantasia: { type: String },
@@ -14,6 +12,6 @@ const PJSchema = SchemaFactory({
   documentos: { type: [ ManySchema ] },
   enderecos: { type: [ EnderecoSchema ] },
 
-}, { _id: false });
+});
 
 module.exports = PJSchema;

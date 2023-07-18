@@ -1,17 +1,22 @@
 const express = require("express");
 const app = express();
 const id6 = require("../helpers/id6");
-const UsuarioSchema = require("../schemas/usuario.schema");
 const mongoose = require("mongoose");
+const UsuarioSchema = require("../schemas/usuario.schema");
 
 const UsuarioModel = mongoose.model('Usuario', UsuarioSchema)
 
+app.get("/usuario-schema", async (req, res) => {
+  res.send(UsuarioSchema.obj);
+})
+
+// Create
 app.post("/usuario", async (req, res) => {
   const data = req.body;
   data._id = id6();
-  const usuario = new UsuarioModel(data);
-
+  
   try {
+    const usuario = new UsuarioModel(data);
     await usuario.save();
     res.send(user);
   } catch (error) {
@@ -19,50 +24,61 @@ app.post("/usuario", async (req, res) => {
   }
 });
 
-app.post("/usuario/:id", async (req, res) => {
+// Update
+app.patch("/usuario/:id", async (req, res) => {
   const data = req.body;
-  data._id = req.params.id;
-  const usuario = new UsuarioModel(data);
 
   try {
-    await usuario.save();
-    res.send(usuario);
+    const usuario = await UsuarioModel.findByIdAndUpdate(
+      req.params.id,
+      data,
+      { new: true },
+    );
+    if (!usuario) {
+      res.status(404).send();
+    } else {
+      res.send(usuario);
+    }
   } catch (error) {
     res.status(500).send(error);
   }
 });
 
+// Delete
 app.delete("/usuario/:id", async (req, res) => {
-  const data = req.body;
-  data._id = req.params.id;
-  const usuario = new UsuarioModel(data);
-
   try {
-    await usuario.delete();
-    res.send({});
+    const usuario = await UsuarioModel.findByIdAndRemove(req.params.id);
+    
+    if (!usuario) {
+      res.status(404).send();
+    } else {
+      res.send(usuario);
+    }
   } catch (error) {
     res.status(500).send(error);
   }
 });
 
+// List
 app.get("/usuarios", async (req, res) => {
-  const data = {}
-  const usuarios = await UsuarioModel.find(req.query);
-
   try {
+    const usuarios = await UsuarioModel.find(req.query);
     res.send(usuarios);
   } catch (error) {
     res.status(500).send(error);
   }
 });
 
-app.get("/usuario/id", async (req, res) => {
-  const data = {}
-  data._id = req.params.id;
-  const usuario = await UsuarioModel.find(data);
-
+// Show
+app.get("/usuario/:id", async (req, res) => {
   try {
-    res.send(usuario);
+    const usuario = await UsuarioModel.findById(req.params.id);
+    
+    if (!usuario) {
+      res.status(404).send();
+    } else {
+      res.send(usuario);
+    }
   } catch (error) {
     res.status(500).send(error);
   }

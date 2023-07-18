@@ -7,8 +7,6 @@ const EnderecoSchema = require("./endereco.schema");
 const QualificacaoSchema = require("./qualificacao.schema");
 
 const PFSchema = SchemaFactory({
-  _id: { type: String, required: true, },
-
   nomePrimeiro: { type: String },
   nomeUltimo: { type: String },
   nomePreferido: { type: String },
@@ -33,6 +31,6 @@ const PFSchema = SchemaFactory({
   aceitaMudarDistancia: { type: Number, default: 0, },
   isPsiquiatra: { type: Boolean, default: false }
 
-}, { _id: false });
+});
 
 module.exports = PFSchema;
