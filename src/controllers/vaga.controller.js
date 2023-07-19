@@ -99,8 +99,9 @@ exports.save = async (req, res) => {
 
   if (req.body._id) {
     const vaga = VagaModel.findById(req.body._id);
-    if (vaga.ownerId !== req.usuario._id) throw new Error("Acesso negado ao alterar vaga criada por outrém");
-    
+    if (vaga.ownerId !== req.usuario._id)
+      throw new Error("Acesso negado ao alterar vaga criada por outrém");
+
     return await VagaModel.findByIdAndUpdate(req.body._id, data, {
       new: true,
       runValidators: true,
@@ -117,8 +118,9 @@ exports.delete = async (req, res) => {
   const vaga = await VagaModel.findById(id);
   if (!vaga) throw new Error("Vaga não encontrada");
 
-  if (vaga.ownerId !== req.usuario._id) throw new Error("Acesso negado ao deletar vaga criada por outrém");
-  await VagaModel.findByIdAndDelete(id)
+  if (vaga.ownerId !== req.usuario._id)
+    throw new Error("Acesso negado ao deletar vaga criada por outrém");
+  await VagaModel.findByIdAndDelete(id);
   return {
     vaga: vaga,
     deleted: true,
@@ -131,26 +133,36 @@ exports.show = async (req, res) => {
   if (!vaga) throw new Error("Vaga não encontrada");
 
   if (!vaga.ocultarEmpresa) {
-    const empresa = await PJModel.findById(vaga.ownerId, "endereco nomeFantasia telefones links")
+    const empresa = await PJModel.findById(
+      vaga.ownerId,
+      "endereco nomeFantasia telefones links"
+    );
     vaga = {
       ...vaga.toJSON(),
       empresa,
-    }
+    };
   }
 
-  // propostas
-  
-  return vaga
-}
+  //TODO: propostas
 
-exports.list = async (req, res) => {
+  return vaga;
+};
+
+exports.listMine = async (req, res) => {
   const { from = 0, to = 30, q, sort = "createdAt" } = req.query;
 
-  let search = {};
+  let search = {
+    ownerId: req.usuario._id,
+  };
   if (q) search.titulo = { $regex: q, $options: "i" };
 
+  //TODO: propostas
+
   const total = await VagaModel.countDocuments(search);
-  let data = await VagaModel.find(search, '_id titulo descricao tipoContrato qualificacoes')
+  let data = await VagaModel.find(
+    search,
+    "_id titulo descricao tipoContrato qualificacoes"
+  )
     .sort({ [sort]: -1 })
     .skip(from)
     .limit(to - from)
@@ -160,8 +172,43 @@ exports.list = async (req, res) => {
     titulo: vaga.titulo,
     tipoContrato: vaga.tipoContrato,
     qualificacoes: vaga.qualificacoes,
-    desc: vaga.descricao.split(' ').slice(0, 30).join(' ').slice(0, 300),
-  }))
+    desc: vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300),
+  }));
+  return {
+    total,
+    data,
+    meta: {
+      from,
+      to,
+      q,
+      sort,
+      search,
+    },
+  };
+};
+
+exports.list = async (req, res) => {
+  const { from = 0, to = 30, q, sort = "createdAt" } = req.query;
+
+  let search = {};
+  if (q) search.titulo = { $regex: q, $options: "i" };
+
+  const total = await VagaModel.countDocuments(search);
+  let data = await VagaModel.find(
+    search,
+    "_id titulo descricao tipoContrato qualificacoes"
+  )
+    .sort({ [sort]: -1 })
+    .skip(from)
+    .limit(to - from)
+    .exec();
+  data = data.map((vaga) => ({
+    _id: vaga._id,
+    titulo: vaga.titulo,
+    tipoContrato: vaga.tipoContrato,
+    qualificacoes: vaga.qualificacoes,
+    desc: vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300),
+  }));
   return {
     total,
     data,

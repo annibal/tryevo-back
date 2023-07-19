@@ -69,6 +69,7 @@ app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
 
 app.get("/vagas", routeWrapper(vagaController.list));
 app.get("/vaga/:id", routeWrapper(vagaController.show));
+app.get("/minhas-vagas", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.listMine));
 app.post("/vaga", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.save));
 app.delete("/vaga/:id", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.delete));
 
