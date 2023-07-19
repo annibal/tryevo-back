@@ -1,4 +1,3 @@
-const express = require("express");
 const bcrypt = require("bcryptjs");
 const config = require("../config");
 const jwt = require("jsonwebtoken");
@@ -17,7 +16,7 @@ const encryptPassword = async (password) => {
 const comparePassword = async (a, b) => {
   const isHashEqual = await bcrypt.compare(a, b);
   return isHashEqual;
-}
+};
 
 const getAuthResponse = (usuarioObj) => {
   const data = {
@@ -35,8 +34,8 @@ exports.login = async (req, res) => {
   const { email, senha } = req.body;
   if (!senha) throw new Error("Senha não informada");
   if (!email) throw new Error("Email não informado");
-  
-  const usuarioObj = await UsuarioModel.findOne({ email, });
+
+  const usuarioObj = await UsuarioModel.findOne({ email });
   if (!usuarioObj) throw new Error("Usuario não encontrado");
 
   const isSenhaOk = await comparePassword(senha, usuarioObj.senha);
@@ -72,7 +71,7 @@ exports.updatePlano = async (req, res) => {
   const usuarioObj = await UsuarioModel.findByIdAndUpdate(
     id,
     { plano },
-    { new: true }
+    { new: true, runValidators: true }
   );
   if (!usuarioObj) throw new Error("Erro ao atualizar assinatura do usuário");
 
@@ -91,7 +90,7 @@ exports.getSelf = async (req, res) => {
     updatedAt: usuario.updatedAt,
   };
   return data;
-}
+};
 
 exports.deleteSelf = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
@@ -101,8 +100,8 @@ exports.deleteSelf = async (req, res) => {
     usuario: usuario._doc,
     deleted: true,
   };
-}
+};
 
 exports.allUsers = async (req, res) => {
   return await UsuarioModel.find(req.query);
-}
+};

@@ -1,10 +1,10 @@
-const SchemaFactory = require("./base.schema");
+const mongoose = require('mongoose');
 
-const EscolaridadeSchema = SchemaFactory({
-  nome: { type: String },
-  nivel: { type: String },
+const EscolaridadeSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  nivel: { type: String, required: true },
   isCompleto: { type: String },
-  inicio: { type: String },
+  inicio: { type: String, required: true },
   fim: { type: String },
 });
 

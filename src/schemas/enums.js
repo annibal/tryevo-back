@@ -51,3 +51,26 @@ exports.TIPO_ESCOLARIDADE = {
   MESTRADO: "MESTRADO",
   DOUTORADO: "DOUTORADO",
 };
+
+exports.TIPO_GENERO = {
+  NAO_ESPECIFICADO: "NAO_ESPECIFICADO",
+  MASCULINO: "MASCULINO",
+  FEMININO: "FEMININO",
+  OUTRO: "OUTRO",
+}
+
+exports.TIPO_ESTADO_CIVIL = {
+  SOLTEIRO: "SOLTEIRO",
+  CASADO: "CASADO",
+  UNIAO_ESTAVEL: "UNIAO_ESTAVEL",
+  VIUVO: "VIUVO",
+  OUTRO: "OUTRO",
+}
+
+// exports.TIPO_CNH = {
+//   A,
+//   B,
+//   C,
+//   D,
+//   E,
+// }

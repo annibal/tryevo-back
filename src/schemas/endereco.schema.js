@@ -1,8 +1,8 @@
-const SchemaFactory = require("./base.schema");
+const mongoose = require('mongoose');
 
-const EnderecoSchema = SchemaFactory({
+const EnderecoSchema = new mongoose.Schema({
   cep: { type: String, required: true },
-  pais: { type: String, required: true },
+  pais: { type: String },
   estado: { type: String, required: true },
   cidade: { type: String, required: true },
   bairro: { type: String, required: true },

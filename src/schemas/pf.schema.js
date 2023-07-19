@@ -6,13 +6,13 @@ const ExperienciaProfissionalSchema = require("./experiencia-profissional.schema
 const EnderecoSchema = require("./endereco.schema");
 
 const PFSchema = SchemaFactory({
-  nomePrimeiro: { type: String },
+  nomePrimeiro: { type: String, required: true, minlength: 3, },
   nomeUltimo: { type: String },
   nomePreferido: { type: String },
-  genero: { type: String },
+  genero: { type: String, required: true },
   estadoCivil: { type: String },
   nacionalidade: { type: String },
-  nascimento: { type: Date },
+  nascimento: { type: Date, required: true },
   
   endereco: { type: EnderecoSchema },
   
@@ -28,8 +28,8 @@ const PFSchema = SchemaFactory({
   
   linguagens: { type: [ ManySchema ] },
   projetosPessoais: { type: [ ProjetosPessoaisSchema ] },
-  escolaridade: { type: [ EscolaridadeSchema ] },
-  experienciaProfissional: { type: [ ExperienciaProfissionalSchema ] },
+  escolaridades: { type: [ EscolaridadeSchema ] },
+  experienciasProfissionais: { type: [ ExperienciaProfissionalSchema ] },
 });
 
 module.exports = PFSchema;

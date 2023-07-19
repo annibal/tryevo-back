@@ -1,10 +1,10 @@
-const SchemaFactory = require("./base.schema");
+const mongoose = require('mongoose');
 
-const ProjetosPessoaisSchema = SchemaFactory({
-  titulo: { type: String },
+const ProjetosPessoaisSchema = new mongoose.Schema({
+  titulo: { type: String, required: true },
   url: { type: String },
   descricao: { type: String },
-  quando: { type: String },
+  quando: { type: String, required: true },
 });
 
 module.exports = ProjetosPessoaisSchema;

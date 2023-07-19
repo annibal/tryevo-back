@@ -58,9 +58,9 @@ app.delete("/qualificacoes/:id", guard(), routeWrapper(qualificacaoController.de
 // Personal Data
 // =====================
 
-app.get("/info/self", guard(), infoController.getSelf);
-app.post("/info/pf", guard(), infoController.postPF);
-app.post("/info/pj", guard(), infoController.postPJ);
+app.get("/info/self", guard(), routeWrapper(infoController.getSelf));
+app.post("/info/pf", guard(), routeWrapper(infoController.postPF));
+app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
 
 // =====================
 
