@@ -222,6 +222,8 @@ exports.list = async (req, res) => {
   };
 };
 
+// exports.favoritar = async (req, res)
+
 // const pageSize = 100;
 // const pageNumber = 1;
 // const data = await MyModel

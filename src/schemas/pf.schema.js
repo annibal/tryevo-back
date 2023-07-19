@@ -32,6 +32,8 @@ const PFSchema = SchemaFactory({
   projetosPessoais: { type: [ ProjetosPessoaisSchema ] },
   escolaridades: { type: [ EscolaridadeSchema ] },
   experienciasProfissionais: { type: [ ExperienciaProfissionalSchema ] },
+
+  vagasSalvas: { type: [ String ] },
 });
 
 module.exports = PFSchema;

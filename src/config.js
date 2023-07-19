@@ -5,5 +5,5 @@ module.exports = {
   cluster: 'mongodb.tryevo.com.br',
   dbName: 'tryevo01',
   port: process.env.PORT_API || 3001,
-  jwtSecret: "4715aed3c946f7b0a38e6b534a9583628d84e96d10fbc04700770d572af3dce43625de",
+  jwtSecret: "F0DA5E69BADA5569DEDADA69CACE7E69FED1D069C0FFEE69BABACA69B0CE7A69CABECA",
 };
