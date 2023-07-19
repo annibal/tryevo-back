@@ -33,20 +33,21 @@ const getAuthResponse = (usuarioObj) => {
 
 exports.login = async (req, res) => {
   const { email, senha } = req.body;
-  if (!senha) throw new Error("Password not informed");
+  if (!senha) throw new Error("Senha não informada");
+  if (!email) throw new Error("Email não informado");
   
   const usuarioObj = await UsuarioModel.findOne({ email, });
-  if (!usuarioObj) throw new Error("User not found");
+  if (!usuarioObj) throw new Error("Usuario não encontrado");
 
   const isSenhaOk = await comparePassword(senha, usuarioObj.senha);
-  if (!isSenhaOk) throw new Error("Invalid password");
+  if (!isSenhaOk) throw new Error("Senha inválida");
 
   return getAuthResponse(usuarioObj);
 };
 
 exports.register = async (req, res) => {
   const { email, senha, isEmpresa } = req.body;
-  if (!senha) throw new Error("Password not informed");
+  if (!senha) throw new Error("Senha não informada");
   const hashSenha = await encryptPassword(senha);
   const data = {
     _id: id6(),
@@ -56,7 +57,7 @@ exports.register = async (req, res) => {
   };
 
   const usuarioObj = await UsuarioModel.create(data);
-  if (!usuarioObj) throw new Error("Failed to create user");
+  if (!usuarioObj) throw new Error("Erro ao criar usuário");
 
   return getAuthResponse(usuarioObj);
 };
@@ -65,7 +66,7 @@ exports.updatePlano = async (req, res) => {
   const { id, plano } = req.body;
 
   if (!Object.values(USUARIO_PLANOS).includes(plano)) {
-    throw new Error(`Invalid plano "${plano}"`);
+    throw new Error(`Plano inválido "${plano}"`);
   }
 
   const usuarioObj = await UsuarioModel.findByIdAndUpdate(
@@ -73,15 +74,15 @@ exports.updatePlano = async (req, res) => {
     { plano },
     { new: true }
   );
-  if (!usuarioObj) throw new Error("Failed to update user plano");
+  if (!usuarioObj) throw new Error("Erro ao atualizar assinatura do usuário");
 
   return getAuthResponse(usuarioObj);
 };
 
 exports.getSelf = async (req, res) => {
-  if (!req.usuario?._id) throw new Error("Usuario not in context jwt data");
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
   const usuario = await UsuarioModel.findById(req.usuario._id);
-  if (!usuario) throw new Error("Usuario not found");
+  if (!usuario) throw new Error("Usuario não encontrado");
   const data = {
     _id: usuario._id,
     email: usuario.email,
@@ -93,9 +94,9 @@ exports.getSelf = async (req, res) => {
 }
 
 exports.deleteSelf = async (req, res) => {
-  if (!req.usuario?._id) throw new Error("Usuario not in context jwt data");
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
   const usuario = await UsuarioModel.findByIdAndRemove(req.usuario._id);
-  if (!usuario) throw new Error("Usuario not found");
+  if (!usuario) throw new Error("Usuario não encontrado");
   return {
     usuario: usuario._doc,
     deleted: true,
