@@ -19,7 +19,8 @@
     "jsbi": "^4.3.0",
     "jsonwebtoken": "^9.0.1",
     "mongodb": "^5.7.0",
-    "mongoose": "^7.3.2"
+    "mongoose": "^7.3.2",
+    "slugify": "^1.6.6"
   },
   "devDependencies": {
     "@babel/core": "^7.22.8",

@@ -1,21 +1,25 @@
 const express = require("express");
-const id6 = require("../helpers/id6");
 const mongoose = require("mongoose");
+const strToSlug = require("../helpers/strToSlug")
 
 const QualificacaoSchema = require("../schemas/qualificacao.schema");
 const QualificacaoModel = mongoose.model("Qualificacao", QualificacaoSchema);
+
 
 exports.create = async (req, res) => {
   const { nome, descricao, pai } = req.body;
   if (!nome) throw new Error("Nome da qualificação é obrigatório");
 
-  const data = { nome };
+  const _id = strToSlug(nome);
+  const qualificacaoExists = await QualificacaoModel.findById(_id);
+  if (qualificacaoExists) throw new Error("Qualificação já existe");
+
+  const data = { _id, nome };
   if (descricao) data.descricao = descricao;
   if (pai) {
     const objPai = await QualificacaoModel.findById(pai);
     if (!objPai) throw new Error(`Qualificação pai "${pai}" não existe`);
   }
-  data._id = id6();
 
   const qualificacao = await QualificacaoModel.create(data);
   if (!qualificacao) throw new Error("Erro ao criar qualificação");
@@ -26,6 +30,13 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   const id = req.params.id;
   const { nome, descricao, pai } = req.body;
+  
+  if (nome) {
+    const newId = strToSlug(nome);
+    const qualificacaoExists = await QualificacaoModel.findById(newId);
+    console.log({ newId, id, _id: qualificacaoExists._id })
+    if (qualificacaoExists._id !== id) throw new Error("Qualificação já existe");
+  }
 
   const data = { nome };
   if (descricao) data.descricao = descricao;
@@ -44,9 +55,7 @@ exports.update = async (req, res) => {
 
 exports.delete = async (req, res) => {
   const id = req.params.id;
-  const qualificacao = await QualificacaoModel.findByIdAndUpdate(id, data, {
-    new: true,
-  });
+  const qualificacao = await QualificacaoModel.findByIdAndDelete(id);
   if (!qualificacao) throw new Error("Qualificação não encontrada");
   return {
     qualificacao: qualificacao._doc,
@@ -56,16 +65,16 @@ exports.delete = async (req, res) => {
 
 exports.list = async (req, res) => {
   const q = req.query.q;
-  const pageSize = 100;
 
   let search = {};
   if (q) search = { nome: { $regex: q, $options: "i" } };
-
   const data = await QualificacaoModel.find(search)
     .lean()
-    .limit(pageSize)
+    .limit(100)
     .exec();
   return data;
+  
+  return await findMany(search, 100);
 };
 
 // const pageSize = 100;
