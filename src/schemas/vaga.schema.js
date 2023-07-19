@@ -15,6 +15,10 @@ const VagaSchema = SchemaFactory({
   idadeMaxima: { type: Number },
   endereco: { type: EnderecoSchema },
 
+  tipoContrato: { type: String },
+  modeloContrato: { type: String },
+  jornada: { type: String },
+
   testes: { type: [String] },
   qualificacoes: { type: [String] },
 

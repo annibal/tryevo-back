@@ -50,6 +50,9 @@ exports.save = async (req, res) => {
   if (req.body.salarioMaximo) data.salarioMaximo = req.body.salarioMaximo;
   if (req.body.idadeMinima) data.idadeMinima = req.body.idadeMinima;
   if (req.body.idadeMaxima) data.idadeMaxima = req.body.idadeMaxima;
+  if (req.body.tipoContrato) data.tipoContrato = req.body.tipoContrato;
+  if (req.body.modeloContrato) data.modeloContrato = req.body.modeloContrato;
+  if (req.body.jornada) data.jornada = req.body.jornada;
 
   if (req.body.qualificacoes) data.qualificacoes = req.body.qualificacoes;
 
@@ -147,7 +150,7 @@ exports.list = async (req, res) => {
   if (q) search.titulo = { $regex: q, $options: "i" };
 
   const total = await VagaModel.countDocuments(search);
-  let data = await VagaModel.find(search, '_id titulo descricao qualificacoes')
+  let data = await VagaModel.find(search, '_id titulo descricao tipoContrato qualificacoes')
     .sort({ [sort]: -1 })
     .skip(from)
     .limit(to - from)
@@ -155,6 +158,7 @@ exports.list = async (req, res) => {
   data = data.map((vaga) => ({
     _id: vaga._id,
     titulo: vaga.titulo,
+    tipoContrato: vaga.tipoContrato,
     qualificacoes: vaga.qualificacoes,
     desc: vaga.descricao.split(' ').slice(0, 30).join(' ').slice(0, 300),
   }))
