@@ -46,6 +46,7 @@ exports.update = async (req, res) => {
 
   const qualificacao = await QualificacaoModel.findByIdAndUpdate(id, data, {
     new: true,
+    runValidators: true,
   });
   if (!qualificacao) throw new Error("Erro ao atualizar qualificação");
 
@@ -72,8 +73,6 @@ exports.list = async (req, res) => {
     .limit(100)
     .exec();
   return data;
-  
-  return await findMany(search, 100);
 };
 
 // const pageSize = 100;

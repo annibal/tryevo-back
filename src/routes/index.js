@@ -9,6 +9,7 @@ const { USUARIO_PLANOS } = enums;
 const authController = require("../controllers/auth.controller");
 const qualificacaoController = require("../controllers/qualificacao.controller");
 const infoController = require("../controllers/info.controller");
+const vagaController = require("../controllers/vaga.controller");
 
 // =====================
 // Healthcheck
@@ -61,6 +62,15 @@ app.delete("/qualificacoes/:id", guard(), routeWrapper(qualificacaoController.de
 app.get("/info/self", guard(), routeWrapper(infoController.getSelf));
 app.post("/info/pf", guard(), routeWrapper(infoController.postPF));
 app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
+
+// =====================
+// Vagas
+// =====================
+
+app.get("/vagas", routeWrapper(vagaController.list));
+app.get("/vaga/:id", routeWrapper(vagaController.show));
+app.post("/vaga", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.save));
+app.delete("/vaga/:id", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.delete));
 
 // =====================
 

@@ -8,6 +8,7 @@ const {
   TIPO_ESCOLARIDADE,
   TIPO_GENERO,
   TIPO_ESTADO_CIVIL,
+  TIPO_CNH,
 } = require("../schemas/enums");
 
 const tiposTelefone = Object.values(TIPO_TELEFONE);
@@ -17,6 +18,7 @@ const tiposFluenciaLinguagem = Object.values(FLUENCIA_LINGUAGEM);
 const tiposEscolaridade = Object.values(TIPO_ESCOLARIDADE);
 const tiposGenero = Object.values(TIPO_GENERO);
 const tiposEstadoCivil = Object.values(TIPO_ESTADO_CIVIL);
+const tiposCNH = Object.values(TIPO_CNH);
 
 // const UsuarioSchema = require("../schemas/usuario.schema");
 // const ManySchema = require("../schemas/many.schema");
@@ -52,6 +54,7 @@ const example_pf = {
   estadoCivil: "",
   nacionalidade: "",
   nascimento: "date",
+  categoriaCNH: "",
   isAleijado: false,
   aceitaTrabalharDistancia: 123,
   aceitaMudarDistancia: 123,
@@ -152,6 +155,11 @@ exports.postPF = async (req, res) => {
     if (!tiposGenero.includes(req.body.genero))
       throw new Error(`Tipo de gênero inválido "${req.body.genero}`);
     data.genero = req.body.genero;
+  }
+  if (req.body.categoriaCNH) {
+    if (!tiposCNH.includes(req.body.categoriaCNH))
+      throw new Error(`Categoria de CNH inválida "${req.body.genero}`);
+    data.categoriaCNH = req.body.categoriaCNH;
   }
   if (req.body.estadoCivil) {
     if (!tiposEstadoCivil.includes(req.body.estadoCivil))

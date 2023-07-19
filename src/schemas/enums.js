@@ -67,10 +67,28 @@ exports.TIPO_ESTADO_CIVIL = {
   OUTRO: "OUTRO",
 }
 
-// exports.TIPO_CNH = {
-//   A,
-//   B,
-//   C,
-//   D,
-//   E,
-// }
+exports.TIPO_CNH = {
+  NONE: "NONE",
+  // A: "A (moto)",
+  // B: "B (carro)",
+  // C: "C (caminhão)",
+  // D: "D (micro ônibus)",
+  // E: "E (articulados)",
+  // AB: "A e B (moto + carro)",
+  // AC: "A e C (moto + caminhão)",
+  // AD: "A e D (moto + micro ônibus)",
+  // AE: "A e E (moto + articulados)",
+  A: "A",
+  B: "B",
+  C: "C",
+  D: "D",
+  E: "E",
+  AB: "AB",
+  AC: "AC",
+  AD: "AD",
+  AE: "AE",
+}
+
+exports.TIPO_QUESTAO = {
+  TEXTO: 'TEXTO',
+}
