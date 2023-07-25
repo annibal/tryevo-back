@@ -1,6 +1,13 @@
 const SchemaFactory = require("./base.schema");
 const EnderecoSchema = require("./endereco.schema");
-const { TIPO_GENERO, TIPO_CNH, TIPO_ESCOLARIDADE } = require("./enums");
+const {
+  TIPO_GENERO,
+  TIPO_CNH,
+  TIPO_ESCOLARIDADE,
+  TIPO_CONTRATO,
+  TIPO_MODELO_CONTRATO,
+  TIPO_JORNADA,
+} = require("./enums");
 const ManySchema = require("./many.schema");
 const VagaQuestaoSchema = require("./vaga-questao.schema");
 
@@ -13,19 +20,20 @@ const VagaSchema = SchemaFactory({
   salarioMaximo: { type: Number },
   idadeMinima: { type: Number },
   idadeMaxima: { type: Number },
+  diasPresencial: { type: Number },
   endereco: { type: EnderecoSchema },
 
-  tipoContrato: { type: String },
-  modeloContrato: { type: String },
-  jornada: { type: String },
+  tipoContrato: { type: String, enum: Object.values(TIPO_CONTRATO) },
+  modeloContrato: { type: String, enum: Object.values(TIPO_MODELO_CONTRATO) },
+  jornada: { type: String, enum: Object.values(TIPO_JORNADA) },
 
   testes: { type: [String] },
   qualificacoes: { type: [String] },
 
   categoriaCNH: { type: String, enum: Object.values(TIPO_CNH) },
   escolaridade: { type: String, enum: Object.values(TIPO_ESCOLARIDADE) },
-  // generos: { type: [String], enum: Object.values(TIPO_GENERO) },
-  // linguagens: { type: [ManySchema] },
+  generos: { type: [String], enum: Object.values(TIPO_GENERO) },
+  linguagens: { type: [ManySchema] },
   beneficiosOferecidos: { type: [ManySchema] },
   questoes: { type: [VagaQuestaoSchema] },
 

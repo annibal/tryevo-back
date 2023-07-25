@@ -4,8 +4,8 @@ const ExperienciaProfissionalSchema = new mongoose.Schema({
   cargo: { type: String, required: true },
   empresa: { type: String, required: true },
   descricao: { type: String },
-  inicio: { type: String, required: true },
-  fim: { type: String },
+  inicio: { type: Date, required: true },
+  fim: { type: Date },
   isAtual: { type: String },
   qualificacoes: { type: [ String ] },
 });

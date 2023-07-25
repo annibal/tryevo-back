@@ -7,6 +7,7 @@ const {
   TIPO_ESCOLARIDADE,
   FLUENCIA_LINGUAGEM,
   TIPO_QUESTAO,
+  TIPO_MODELO_CONTRATO,
 } = require("../schemas/enums");
 const tiposGenero = Object.values(TIPO_GENERO);
 const tiposFluenciaLinguagem = Object.values(FLUENCIA_LINGUAGEM);
@@ -31,6 +32,12 @@ const exemplo_vaga = {
   qualificacoes: ["string"],
   categoriaCNH: "NONE",
   escolaridade: "FUNDAMENTAL",
+  generos: ["MASCULINO", "FEMININO"],
+  tipoContrato: "CLT",
+  modeloContrato: "HIBRIDO",
+  diasPresencial: 2,
+  jornada: "VESPERTINO",
+  linguagens: [{ valor: "Portugues", tipo: "PROFICIENTE" }],
   beneficiosOferecidos: [{ valor: 300, tipo: "Vale Alimentação" }],
   questoes: [{ titulo: "Questao 1", tipo: "TEXTO", isObrigatorio: true }],
   pcd: false,
@@ -38,6 +45,16 @@ const exemplo_vaga = {
   disponivelMudanca: false,
   ocultarEmpresa: false,
   analisePsicologo: false,
+  endereco: {
+    cep: "",
+    pais: "",
+    estado: "",
+    cidade: "",
+    bairro: "",
+    rua: "",
+    numero: "",
+    complemento: "",
+  }
 };
 
 exports.save = async (req, res) => {
@@ -46,13 +63,18 @@ exports.save = async (req, res) => {
   if (req.body.titulo) data.titulo = req.body.titulo;
   if (req.body.descricao) data.descricao = req.body.descricao;
   if (req.body.experiencia) data.experiencia = req.body.experiencia;
+
+  if (req.body.salarioMaximo && req.body.salarioMinimo && req.body.salarioMaximo >= req.body.salarioMinimo) {
+    throw new Error(`Salário máximo "${req.body.salarioMaximo}" deve ser maior que Salário mínimo "${req.body.salarioMinimo}"`);
+  }
   if (req.body.salarioMinimo) data.salarioMinimo = req.body.salarioMinimo;
   if (req.body.salarioMaximo) data.salarioMaximo = req.body.salarioMaximo;
+  
+  if (req.body.idadeMaxima && req.body.idadeMinima && req.body.idadeMaxima >= req.body.idadeMinima) {
+    throw new Error(`Idade máxima "${req.body.idadeMaxima}" deve ser maior que Idade mínima "${req.body.idadeMinima}"`);
+  }
   if (req.body.idadeMinima) data.idadeMinima = req.body.idadeMinima;
   if (req.body.idadeMaxima) data.idadeMaxima = req.body.idadeMaxima;
-  if (req.body.tipoContrato) data.tipoContrato = req.body.tipoContrato;
-  if (req.body.modeloContrato) data.modeloContrato = req.body.modeloContrato;
-  if (req.body.jornada) data.jornada = req.body.jornada;
 
   if (req.body.qualificacoes) data.qualificacoes = req.body.qualificacoes;
 
@@ -66,9 +88,57 @@ exports.save = async (req, res) => {
       throw new Error("Escolaridade inválida");
     data.escolaridade = req.body.escolaridade;
   }
-  // if (req.body.generos)
-  // if (req.body.linguagens)
-  // if (req.body.endeceo)
+  if (req.body.generos) {
+    req.body.generos.forEach((genero, generoIdx) => {
+      if (!tiposGenero.includes(req.body.generos))
+        throw new Error(`Gênero ${generoIdx + 1} "${genero}" inválido`);
+    });
+    data.generos = req.body.generos;
+  }
+  if (req.body.tipoContrato) {
+    if (!tipo.includes(req.body.tipoContrato))
+      throw new Error(`Tipo de contrato "${tipoContrato}" inválido`);
+    data.tipoContrato = req.body.tipoContrato;
+  }
+  if (req.body.modeloContrato) {
+    if (!tipo.includes(req.body.modeloContrato))
+      throw new Error(`Modelo de contrato "${modeloContrato}" inválido`);
+    data.modeloContrato = req.body.modeloContrato;
+
+    if (req.body.modeloContrato === TIPO_MODELO_CONTRATO.HIBRIDO) {
+      if (!req.body.diasPresencial)
+        throw new Error(
+          `Quantidade de dias presenciais é obrigatória se o modelo de contrato for híbrido`
+        );
+      data.diasPresencial = req.body.diasPresencial;
+    }
+  }
+  if (req.body.jornada) {
+    if (!tipo.includes(req.body.jornada))
+      throw new Error(`Jornada "${jornada}" inválida`);
+    data.jornada = req.body.jornada;
+  }
+  if (req.body.linguagens) {
+    req.body.linguagens.forEach((linguagem, linguagemIdx) => {
+      if (!tiposFluenciaLinguagem.includes(linguagem.tipo))
+        throw new Error(
+          `Fluencia de linguagem ${linguagemIdx + 1} "${linguagem}" inválida`
+        );
+    });
+    data.linguagens = req.body.linguagens;
+  }
+  if (req.body.endereco) {
+    const endereco = req.body.endereco;
+    data.endereco = {};
+    if (endereco.cep) data.endereco.cep = endereco.cep;
+    if (endereco.pais) data.endereco.pais = endereco.pais;
+    if (endereco.estado) data.endereco.estado = endereco.estado;
+    if (endereco.cidade) data.endereco.cidade = endereco.cidade;
+    if (endereco.bairro) data.endereco.bairro = endereco.bairro;
+    if (endereco.rua) data.endereco.rua = endereco.rua;
+    if (endereco.numero) data.endereco.numero = endereco.numero;
+    if (endereco.complemento) data.endereco.complemento = endereco.complemento;
+  }
   if (req.body.beneficiosOferecidos)
     data.beneficiosOferecidos = req.body.beneficiosOferecidos;
 

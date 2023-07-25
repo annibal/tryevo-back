@@ -30,6 +30,7 @@ const tiposCNH = Object.values(TIPO_CNH);
 const PFSchema = require("../schemas/pf.schema");
 const PJSchema = require("../schemas/pj.schema");
 const validateDocumento = require("../helpers/validateDocumento");
+const parseDMYdate = require("../helpers/parseDMYdate");
 
 const PFModel = mongoose.model("PF", PFSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
@@ -142,7 +143,7 @@ exports.postPF = async (req, res) => {
   if (req.body.nomeUltimo) data.nomeUltimo = req.body.nomeUltimo;
   if (req.body.nomePreferido) data.nomePreferido = req.body.nomePreferido;
   if (req.body.nacionalidade) data.nacionalidade = req.body.nacionalidade;
-  if (req.body.nascimento) data.nascimento = req.body.nascimento;
+  if (req.body.nascimento) data.nascimento = parseDMYdate(req.body.nascimento);
   if (req.body.isAleijado) data.isAleijado = !!req.body.isAleijado;
   if (req.body.aceitaTrabalharDistancia)
     data.aceitaTrabalharDistancia = Math.floor(
@@ -221,11 +222,11 @@ exports.postPF = async (req, res) => {
   if (req.body.documentos) {
     data.documentos = [];
     if (req.body.documentos.length > 0) {
-      req.body.documentos.forEach((documento) => {
+      req.body.documentos.forEach((documento, idx) => {
         if (!tiposDocumento.includes(documento.tipo))
-          throw new Error(`Tipo de documento inválido "${documento.tipo}"`);
+          throw new Error(`Tipo de documento ${idx + 1} inválido "${documento.tipo}"`);
         if (!validateDocumento(documento.valor, documento.tipo))
-          throw new Error(`Documento inválido "${documento.valor}"`);
+          throw new Error(`Documento ${idx + 1} inválido "${documento.valor}"`);
         const dataDocumento = {
           valor: documento.valor,
           tipo: documento.tipo,
@@ -238,13 +239,13 @@ exports.postPF = async (req, res) => {
   if (req.body.linguagens) {
     data.linguagens = [];
     if (req.body.linguagens.length > 0) {
-      req.body.linguagens.forEach((linguagem) => {
+      req.body.linguagens.forEach((linguagem, idx) => {
         if (!tiposFluenciaLinguagem.includes(linguagem.tipo))
           throw new Error(
-            `Tipo de fluencia de linguagem inválido "${linguagem.tipo}"`
+            `Tipo de fluencia de linguagem ${idx + 1} inválido "${linguagem.tipo}"`
           );
         if (linguagem.valor?.length < 4)
-          throw new Error(`Linguagem inválida "${linguagem.valor}"`);
+          throw new Error(`Linguagem ${idx + 1} inválida "${linguagem.valor}"`);
         const dataLinguagem = {
           valor: linguagem.valor,
           tipo: linguagem.tipo,
@@ -265,7 +266,7 @@ exports.postPF = async (req, res) => {
         if (projetoPessoal.descricao)
           dataProjetoPessoal.descricao = projetoPessoal.descricao;
         if (projetoPessoal.quando)
-          dataProjetoPessoal.quando = projetoPessoal.quando;
+          dataProjetoPessoal.quando = parseDMYdate(projetoPessoal.quando);
         data.projetosPessoais.push(dataProjetoPessoal);
       });
     }
@@ -274,30 +275,30 @@ exports.postPF = async (req, res) => {
   if (req.body.escolaridades) {
     data.escolaridades = [];
     if (req.body.escolaridades.length > 0) {
-      req.body.escolaridades.forEach((escolaridade) => {
+      req.body.escolaridades.forEach((escolaridade, idx) => {
         const dataEscolaridade = {};
-        if (!escolaridade.fim && !escolaridade.isCompleto)
-          throw new Error("Escolaridade deve ter um fim ou estar completa");
-        if (escolaridade.fim && escolaridade.isCompleto)
-          throw new Error("Escolaridade deve ou ter um fim ou estar completa");
+        if (escolaridade.isCompleto && !escolaridade.fim)
+          throw new Error(`Escolaridade ${idx + 1} informada como completa necessita da data de fim`);
+        if (!escolaridade.isCompleto && escolaridade.fim)
+          throw new Error(`Escolaridade ${idx + 1} não foi completada portanto não deve ter uma data de fim`);
         if (
           escolaridade.inicio &&
           escolaridade.fim &&
-          new Date(escolaridade.inicio) >= new Date(escolaridade.fim)
+          new Date(parseDMYdate(escolaridade.inicio)) >= new Date(parseDMYdate(escolaridade.fim))
         )
-          throw new Error("Fim da Escolaridade deve ser antes do inicio");
+          throw new Error(`Fim da Escolaridade ${idx + 1} deve ser antes do inicio`);
         if (escolaridade.nivel) {
           if (!tiposEscolaridade.includes(escolaridade.nivel))
             throw new Error(
-              `Tipo de escolaridade inválido "${escolaridade.nivel}"`
+              `Tipo de escolaridade ${idx + 1} inválido "${escolaridade.nivel}"`
             );
           dataEscolaridade.nivel = escolaridade.nivel;
         }
         if (escolaridade.isCompleto)
           dataEscolaridade.isCompleto = !!escolaridade.isCompleto;
         if (escolaridade.nome) dataEscolaridade.nome = escolaridade.nome;
-        if (escolaridade.inicio) dataEscolaridade.inicio = escolaridade.inicio;
-        if (escolaridade.fim) dataEscolaridade.fim = escolaridade.inicio;
+        if (escolaridade.inicio) dataEscolaridade.inicio = parseDMYdate(escolaridade.inicio);
+        if (escolaridade.fim) dataEscolaridade.fim = parseDMYdate(escolaridade.fim);
         data.escolaridades.push(dataEscolaridade);
       });
     }
@@ -306,24 +307,24 @@ exports.postPF = async (req, res) => {
   if (req.body.experienciasProfissionais) {
     data.experienciasProfissionais = [];
     if (req.body.experienciasProfissionais.length > 0) {
-      req.body.experienciasProfissionais.forEach((experienciaProfissional) => {
+      req.body.experienciasProfissionais.forEach((experienciaProfissional, idx) => {
         const dataExperienciaProfissional = {};
         if (!experienciaProfissional.fim && !experienciaProfissional.isAtual)
           throw new Error(
-            "Experiência Profissional deve ter um fim ou ser atual"
+            `Experiência Profissional ${idx + 1} deve ter um fim ou ser atual`
           );
         if (experienciaProfissional.fim && experienciaProfissional.isAtual)
           throw new Error(
-            "Experiência Profissional deve ou ter um fim ou ser atual"
+            `Experiência Profissional ${idx + 1} deve ou ter um fim ou ser atual`
           );
         if (
           experienciaProfissional.inicio &&
           experienciaProfissional.fim &&
-          new Date(experienciaProfissional.inicio) >=
-            new Date(experienciaProfissional.fim)
+          new Date(parseDMYdate(experienciaProfissional.inicio)) >=
+            new Date(parseDMYdate(experienciaProfissional.fim))
         )
           throw new Error(
-            "Fim da Experiência Profissional deve ser antes do inicio"
+            `Fim da Experiência Profissional ${idx + 1} deve ser antes do inicio`
           );
         if (experienciaProfissional.cargo)
           dataExperienciaProfissional.cargo = experienciaProfissional.cargo;
@@ -333,9 +334,9 @@ exports.postPF = async (req, res) => {
           dataExperienciaProfissional.descricao =
             experienciaProfissional.descricao;
         if (experienciaProfissional.inicio)
-          dataExperienciaProfissional.inicio = experienciaProfissional.inicio;
+          dataExperienciaProfissional.inicio = parseDMYdate(experienciaProfissional.inicio);
         if (experienciaProfissional.fim)
-          dataExperienciaProfissional.fim = experienciaProfissional.fim;
+          dataExperienciaProfissional.fim = parseDMYdate(experienciaProfissional.fim);
         if (experienciaProfissional.isAtual)
           dataExperienciaProfissional.isAtual = experienciaProfissional.isAtual;
         if (experienciaProfissional.qualificacoes)
