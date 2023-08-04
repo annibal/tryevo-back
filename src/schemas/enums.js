@@ -34,6 +34,7 @@ exports.TIPO_LINK = {
   TWITTER: "TWITTER",
   YOUTUBE: "YOUTUBE",
   OUTRO: "OUTRO",
+  
 };
 
 exports.FLUENCIA_LINGUAGEM = {
