@@ -39,6 +39,16 @@ app.post(
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.updatePlano)
 );
+app.post(
+  "/auth/change-password",
+  guard(),
+  routeWrapper(authController.changePassword)
+);
+app.post(
+  "/auth/change-account-type",
+  guard(),
+  routeWrapper(authController.changeAccountType)
+);
 app.get("/auth/self", guard(), routeWrapper(authController.getSelf));
 app.get(
   "/auth/users",
@@ -51,9 +61,21 @@ app.get(
 // =====================
 
 app.get("/qualificacoes", routeWrapper(qualificacaoController.list));
-app.post("/qualificacoes", guard(), routeWrapper(qualificacaoController.create));
-app.post("/qualificacoes/:id", guard(), routeWrapper(qualificacaoController.update));
-app.delete("/qualificacoes/:id", guard(), routeWrapper(qualificacaoController.delete));
+app.post(
+  "/qualificacoes",
+  guard(),
+  routeWrapper(qualificacaoController.create)
+);
+app.post(
+  "/qualificacoes/:id",
+  guard(),
+  routeWrapper(qualificacaoController.update)
+);
+app.delete(
+  "/qualificacoes/:id",
+  guard(),
+  routeWrapper(qualificacaoController.delete)
+);
 
 // =====================
 // Personal Data
@@ -69,9 +91,36 @@ app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
 
 app.get("/vagas", routeWrapper(vagaController.list));
 app.get("/vaga/:id", routeWrapper(vagaController.show));
-app.get("/minhas-vagas", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.listMine));
-app.post("/vaga", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.save));
-app.delete("/vaga/:id", guard([USUARIO_PLANOS.PJ_FREE, USUARIO_PLANOS.PJ_PREMIUM, USUARIO_PLANOS.PJ_SMART, USUARIO_PLANOS.PJ_ENTERPRISE]), routeWrapper(vagaController.delete));
+app.get(
+  "/minhas-vagas",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(vagaController.listMine)
+);
+app.post(
+  "/vaga",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(vagaController.save)
+);
+app.delete(
+  "/vaga/:id",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(vagaController.delete)
+);
 
 // =====================
 

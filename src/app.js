@@ -7,7 +7,7 @@ const app = express();
 app.use(cors())
 app.use(express.json());
 app.use(require('./logger'));
-app.use(require('./routes'));
+app.use(require('./routes/router'));
 
 app.listen(config.port, () => {
   console.log(">: app.js: Server running at port " + config.port);

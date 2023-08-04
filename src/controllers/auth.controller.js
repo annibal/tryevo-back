@@ -78,6 +78,28 @@ exports.updatePlano = async (req, res) => {
   return getAuthResponse(usuarioObj);
 };
 
+exports.changeAccountType = async (req, res) => {
+  const id = req.usuario?._id
+  if (!id) throw new Error("Usuário não encontrado na sessão");
+  
+  const { tipo } = req.body;
+  let plano = null;
+  if (tipo === 'pf') plano = USUARIO_PLANOS.PF_FREE;
+  if (tipo === 'pj') plano = USUARIO_PLANOS.PJ_FREE;
+  if (!tipo) {
+    throw new Error(`Tipo inválido "${tipo}" ao alterar conta`);
+  }
+
+  const usuarioObj = await UsuarioModel.findByIdAndUpdate(
+    id,
+    { plano },
+    { new: true, runValidators: true }
+  );
+  if (!usuarioObj) throw new Error("Erro ao atualizar tipo de conta");
+
+  return getAuthResponse(usuarioObj);
+};
+
 exports.getSelf = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
   const usuario = await UsuarioModel.findById(req.usuario._id);
@@ -101,6 +123,25 @@ exports.deleteSelf = async (req, res) => {
     deleted: true,
   };
 };
+
+exports.changePassword = async (req, res) => {
+  const { senha} = req.body;
+  if (!senha) throw new Error("Senha não informada");
+  const id = req.usuario?._id
+  if (!id) throw new Error("Usuário não encontrado na sessão");
+  const usuario = await UsuarioModel.findById(id);
+  if (!usuario) throw new Error("Usuario não encontrado");
+
+  const hashSenha = await encryptPassword(senha);
+  const usuarioObj = await UsuarioModel.findByIdAndUpdate(
+    id,
+    { senha: hashSenha },
+    { new: true, runValidators: true }
+  );
+  if (!usuarioObj) throw new Error("Erro ao atualizar assinatura do usuário");
+  
+  return getAuthResponse(usuarioObj);
+}
 
 exports.allUsers = async (req, res) => {
   return await UsuarioModel.find(req.query);
