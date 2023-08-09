@@ -78,6 +78,23 @@ exports.updatePlano = async (req, res) => {
   return getAuthResponse(usuarioObj);
 };
 
+exports.elevate = async (req, res) => {
+  const id = req.usuario?._id
+  if (!id) throw new Error("Usuário não encontrado na sessão");
+
+  const masterpass = req.params.masterpass;
+  if (masterpass !== 'tryevo_master_password') throw new Error("Senha mestre errada");
+  
+  const usuarioObj = await UsuarioModel.findByIdAndUpdate(
+    id,
+    { plano: USUARIO_PLANOS.MASTER_ADMIN },
+    { new: true, runValidators: true }
+  );
+  if (!usuarioObj) throw new Error("Erro ao elevar usuário");
+
+  return 'Elevado com sucesso!';
+}
+
 exports.changeAccountType = async (req, res) => {
   const id = req.usuario?._id
   if (!id) throw new Error("Usuário não encontrado na sessão");

@@ -9,6 +9,7 @@ const { USUARIO_PLANOS } = enums;
 const authController = require("../controllers/auth.controller");
 const qualificacaoController = require("../controllers/qualificacao.controller");
 const infoController = require("../controllers/info.controller");
+const cboController = require("../controllers/cbo.controller");
 const vagaController = require("../controllers/vaga.controller");
 
 // =====================
@@ -38,6 +39,11 @@ app.post(
   "/auth/update-plano",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.updatePlano)
+);
+app.get(
+  "/auth/elevate/:masterpass",
+  guard([]),
+  routeWrapper(authController.elevate)
 );
 app.post(
   "/auth/change-password",
@@ -84,6 +90,34 @@ app.delete(
 app.get("/info/self", guard(), routeWrapper(infoController.getSelf));
 app.post("/info/pf", guard(), routeWrapper(infoController.postPF));
 app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
+
+// =====================
+// CBO - Cadastro Brasileiro de Ocupações
+// =====================
+
+app.get("/cbo", routeWrapper(cboController.list));
+app.post("/cbo/", guard(), routeWrapper(cboController.create));
+app.post("/cbo/:id/", guard(), routeWrapper(cboController.edit));
+app.get(
+  "/cbo/validate/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(cboController.validate)
+);
+app.get(
+  "/cbo/invalidate/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(cboController.invalidate)
+);
+app.delete(
+  "/cbo/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(cboController.delete)
+);
+app.post(
+  "/cbo-import",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(cboController.doImport)
+);
 
 // =====================
 // Vagas

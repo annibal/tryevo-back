@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config");
+const { USUARIO_PLANOS } = require("../schemas/enums");
 
 const getToken = (req) => {
   let str = req?.headers?.authorization;
@@ -20,7 +21,9 @@ const guard =
         if (error) {
           return res.status(401).send({ message: "Not authorized", error });
         } else {
-          if (!planos || planos.length < 1 || planos.includes(decodedToken.plano)) {
+          let isAuthorized = !planos || planos.length < 1 || planos.includes(decodedToken.plano);
+          if (decodedToken.plano === USUARIO_PLANOS.MASTER_ADMIN) isAuthorized = true;
+          if (isAuthorized) {
             req.usuario = {
               _id: decodedToken._id,
               email: decodedToken.email,
