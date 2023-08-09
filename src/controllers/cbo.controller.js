@@ -93,7 +93,7 @@ exports.delete = async (req, res) => {
 };
 
 exports.doImport = async (req, res) => {
-  if (!req.body.lista) throw new Error('Lista para importar não informada');
+  if (!req.body.lista) throw new Error('Lista para importar cbos não informada');
 
   const items = req.body.lista.split('\n').map(x => {
     const row = x.split('\t');

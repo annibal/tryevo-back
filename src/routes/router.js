@@ -9,8 +9,9 @@ const { USUARIO_PLANOS } = enums;
 const authController = require("../controllers/auth.controller");
 const qualificacaoController = require("../controllers/qualificacao.controller");
 const infoController = require("../controllers/info.controller");
-const cboController = require("../controllers/cbo.controller");
 const vagaController = require("../controllers/vaga.controller");
+const cboController = require("../controllers/cbo.controller");
+const habilidadeController = require("../controllers/habilidade.controller");
 
 // =====================
 // Healthcheck
@@ -63,27 +64,6 @@ app.get(
 );
 
 // =====================
-// Qualificacoes
-// =====================
-
-app.get("/qualificacoes", routeWrapper(qualificacaoController.list));
-app.post(
-  "/qualificacoes",
-  guard(),
-  routeWrapper(qualificacaoController.create)
-);
-app.post(
-  "/qualificacoes/:id",
-  guard(),
-  routeWrapper(qualificacaoController.update)
-);
-app.delete(
-  "/qualificacoes/:id",
-  guard(),
-  routeWrapper(qualificacaoController.delete)
-);
-
-// =====================
 // Personal Data
 // =====================
 
@@ -96,8 +76,8 @@ app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
 // =====================
 
 app.get("/cbo", routeWrapper(cboController.list));
-app.post("/cbo/", guard(), routeWrapper(cboController.create));
-app.post("/cbo/:id/", guard(), routeWrapper(cboController.edit));
+app.post("/cbo", guard(), routeWrapper(cboController.create));
+app.post("/cbo/:id", guard([USUARIO_PLANOS.MASTER_ADMIN]), routeWrapper(cboController.edit));
 app.get(
   "/cbo/validate/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
@@ -117,6 +97,45 @@ app.post(
   "/cbo-import",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(cboController.doImport)
+);
+
+// =====================
+// Habilidades
+// =====================
+
+app.get("/habilidade", routeWrapper(habilidadeController.list));
+app.post("/habilidade", guard(), routeWrapper(habilidadeController.create));
+app.post("/habilidade/:id", guard([USUARIO_PLANOS.MASTER_ADMIN]), routeWrapper(habilidadeController.edit));
+app.delete(
+  "/habilidade/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(habilidadeController.delete)
+);
+app.post(
+  "/habilidade-import",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(habilidadeController.doImport)
+);
+
+// =====================
+// Qualificacoes
+// =====================
+
+app.get("/qualificacoes", routeWrapper(qualificacaoController.list));
+app.post(
+  "/qualificacoes",
+  guard(),
+  routeWrapper(qualificacaoController.create)
+);
+app.post(
+  "/qualificacoes/:id",
+  guard(),
+  routeWrapper(qualificacaoController.update)
+);
+app.delete(
+  "/qualificacoes/:id",
+  guard(),
+  routeWrapper(qualificacaoController.delete)
 );
 
 // =====================
