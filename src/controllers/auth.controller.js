@@ -160,6 +160,35 @@ exports.changePassword = async (req, res) => {
   return getAuthResponse(usuarioObj);
 }
 
+exports.getSingleUser = async (req, res) => {
+  return await UsuarioModel.findById(req.params.id)
+}
+
 exports.allUsers = async (req, res) => {
-  return await UsuarioModel.find(req.query);
+  const { from = 0, to = 30, q, planos, id } = req.query;
+
+  let search = {};
+  if (q) {
+    search.email = { $regex: q, $options: "i" };
+  }
+  if (planos) {
+    search.plano = { $in: planos.split(',') };
+  }
+
+  const total = await UsuarioModel.countDocuments(search);
+  let data = await UsuarioModel.find(search)
+    .skip(from)
+    .limit(to - from)
+    .exec();
+
+  return {
+    data,
+    meta: {
+      total,
+      from,
+      to,
+      q,
+      search,
+    },
+  };
 };

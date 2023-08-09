@@ -28,7 +28,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const id = req.params.id;
-  const { nome, descricao, pai } = req.body;
+  const { nome, descricao, valid, pai } = req.body;
   
   if (nome) {
     const newId = strToSlug(nome);
@@ -38,10 +38,14 @@ exports.update = async (req, res) => {
   }
 
   const data = { nome };
-  if (descricao) data.descricao = descricao;
+  if (descricao != null) data.descricao = descricao;
   if (pai) {
     const objPai = await QualificacaoModel.findById(pai);
     if (!objPai) throw new Error(`Qualificação pai "${pai}" não existe`);
+  }
+
+  if (valid !== null && valid !== undefined) {
+    data.valid = valid;
   }
 
   const qualificacao = await QualificacaoModel.findByIdAndUpdate(id, data, {
@@ -64,15 +68,34 @@ exports.delete = async (req, res) => {
 };
 
 exports.list = async (req, res) => {
-  const q = req.query.q;
+  const { from = 0, to = 30, q, valid } = req.query;
 
-  let search = {};
-  if (q) search = { nome: { $regex: q, $options: "i" } };
-  const data = await QualificacaoModel.find(search)
-    .lean()
-    .limit(100)
+  let search = { valid: true };
+  if (valid != null) {
+    search = {};
+    if (valid === 'yes') search.valid = true;
+    if (valid === 'no') search.valid = false;
+  }
+  if (q) {
+    search.nome = { $regex: q, $options: "i" };
+  }
+
+  const total = await QualificacaoModel.countDocuments(search);
+  let data = await QualificacaoModel.find(search)
+    .skip(from)
+    .limit(to - from)
     .exec();
-  return data;
+
+  return {
+    data,
+    meta: {
+      total,
+      from,
+      to,
+      q,
+      search,
+    },
+  };
 };
 
 // const pageSize = 100;

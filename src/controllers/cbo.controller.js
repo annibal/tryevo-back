@@ -23,9 +23,9 @@ exports.list = async (req, res) => {
     .exec();
 
   return {
-    total,
     data,
     meta: {
+      total,
       from,
       to,
       q,

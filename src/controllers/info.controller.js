@@ -47,6 +47,15 @@ exports.getSelf = async (req, res) => {
   }
 };
 
+exports.getById = async (req, res) => {
+  const dataPF = await PFModel.findById(req.params.id);
+  const dataPJ = await PJModel.findById(req.params.id);
+  return {
+    dataPF,
+    dataPJ,
+  };
+}
+
 const example_pf = {
   nomePrimeiro: "",
   nomeUltimo: "",

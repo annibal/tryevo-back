@@ -7,11 +7,11 @@ const routeWrapper = require("../helpers/routeWrapper");
 const enums = require("../schemas/enums");
 const { USUARIO_PLANOS } = enums;
 const authController = require("../controllers/auth.controller");
-const qualificacaoController = require("../controllers/qualificacao.controller");
 const infoController = require("../controllers/info.controller");
 const vagaController = require("../controllers/vaga.controller");
 const cboController = require("../controllers/cbo.controller");
 const habilidadeController = require("../controllers/habilidade.controller");
+const qualificacaoController = require("../controllers/qualificacao.controller");
 
 // =====================
 // Healthcheck
@@ -62,12 +62,18 @@ app.get(
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.allUsers)
 );
+app.get(
+  "/auth/user/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(authController.getSingleUser)
+);
 
 // =====================
 // Personal Data
 // =====================
 
 app.get("/info/self", guard(), routeWrapper(infoController.getSelf));
+app.get("/info/other/:id", guard([USUARIO_PLANOS.MASTER_ADMIN]), routeWrapper(infoController.getById));
 app.post("/info/pf", guard(), routeWrapper(infoController.postPF));
 app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
 
@@ -121,19 +127,29 @@ app.post(
 // Qualificacoes
 // =====================
 
-app.get("/qualificacoes", routeWrapper(qualificacaoController.list));
+app.get("/qualificacao", routeWrapper(qualificacaoController.list));
 app.post(
-  "/qualificacoes",
+  "/qualificacao",
   guard(),
   routeWrapper(qualificacaoController.create)
 );
 app.post(
-  "/qualificacoes/:id",
-  guard(),
+  "/qualificacao/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(qualificacaoController.update)
 );
+app.get(
+  "/qualificacao/validate/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(qualificacaoController.validate)
+);
+app.get(
+  "/qualificacao/invalidate/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(qualificacaoController.invalidate)
+);
 app.delete(
-  "/qualificacoes/:id",
+  "/qualificacao/:id",
   guard(),
   routeWrapper(qualificacaoController.delete)
 );

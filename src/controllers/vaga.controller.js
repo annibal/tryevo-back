@@ -245,9 +245,9 @@ exports.listMine = async (req, res) => {
     desc: vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300),
   }));
   return {
-    total,
     data,
     meta: {
+      total,
       from,
       to,
       q,
@@ -280,9 +280,9 @@ exports.list = async (req, res) => {
     desc: vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300),
   }));
   return {
-    total,
     data,
     meta: {
+      total,
       from,
       to,
       q,
