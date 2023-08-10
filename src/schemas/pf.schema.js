@@ -36,7 +36,7 @@ const PFSchema = SchemaFactory({
     default: TIPO_CNH.NONE,
   },
 
-  qualificacoes: { type: [String] }, // aka Competencias
+  // qualificacoes: { type: [String] }, // aka Competencias
   habilidades: { type: [String] },
 
   objetivos: {

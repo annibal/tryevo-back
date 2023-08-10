@@ -310,9 +310,9 @@ exports.postPF = async (req, res) => {
     }
   }
 
-  if (req.body.qualificacoes && req.body.qualificacoes.length > 0) {
-    data.qualificacoes = req.body.qualificacoes.map(x => x._id).filter(x => x);
-  }
+  // if (req.body.qualificacoes && req.body.qualificacoes.length > 0) {
+  //   data.qualificacoes = req.body.qualificacoes.map(x => x._id).filter(x => x);
+  // }
 
   if (req.body.habilidades) {
     data.habilidades = req.body.habilidades.map(x => x._id).filter(x => x);
@@ -341,6 +341,8 @@ exports.postPJ = async (req, res) => {
   if (req.body.nomeResponsavel) data.nomeResponsavel = req.body.nomeResponsavel;
   if (req.body.razaoSocial) data.razaoSocial = req.body.razaoSocial;
   if (req.body.nomeFantasia) data.nomeFantasia = req.body.nomeFantasia;
+  if (req.body.cnpj) data.cnpj = req.body.cnpj;
+  if (req.body.inscricaoEstadual) data.inscricaoEstadual = req.body.cnpj;
 
   if (req.body.endereco) {
     const endereco = req.body.endereco;
@@ -389,23 +391,6 @@ exports.postPJ = async (req, res) => {
         if (link.descricao) dataLink.descricao = link.descricao;
         if (link.isPrimario) dataLink.isPrimario = link.isPrimario;
         data.links.push(dataLink);
-      });
-    }
-  }
-
-  if (req.body.documentos) {
-    data.documentos = [];
-    if (req.body.documentos.length > 0) {
-      req.body.documentos.forEach((documento) => {
-        if (!tiposDocumento.includes(documento.tipo))
-          throw new Error(`Tipo de documento inválido "${documento.tipo}"`);
-        if (!validateDocumento(documento.valor, documento.tipo))
-          throw new Error(`Documento inválido "${documento.valor}"`);
-        const dataDocumento = {
-          valor: documento.valor,
-          tipo: documento.tipo,
-        };
-        data.documentos.push(dataDocumento);
       });
     }
   }

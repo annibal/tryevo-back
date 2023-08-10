@@ -8,12 +8,17 @@ const {
   FLUENCIA_LINGUAGEM,
   TIPO_QUESTAO,
   TIPO_MODELO_CONTRATO,
+  TIPO_CONTRATO,
+  TIPO_JORNADA,
 } = require("../schemas/enums");
 const tiposGenero = Object.values(TIPO_GENERO);
 const tiposFluenciaLinguagem = Object.values(FLUENCIA_LINGUAGEM);
 const tiposCNH = Object.values(TIPO_CNH);
 const tiposEscolaridade = Object.values(TIPO_ESCOLARIDADE);
 const tiposQuestao = Object.values(TIPO_QUESTAO);
+const tiposContrato = Object.values(TIPO_CONTRATO);
+const tiposModeloContrato = Object.values(TIPO_MODELO_CONTRATO);
+const tiposJornada = Object.values(TIPO_JORNADA);
 
 const VagaSchema = require("../schemas/vaga.schema");
 const PJSchema = require("../schemas/pj.schema");
@@ -64,13 +69,13 @@ exports.save = async (req, res) => {
   if (req.body.descricao) data.descricao = req.body.descricao;
   if (req.body.experiencia) data.experiencia = req.body.experiencia;
 
-  if (req.body.salarioMaximo && req.body.salarioMinimo && req.body.salarioMaximo >= req.body.salarioMinimo) {
+  if (req.body.salarioMaximo && req.body.salarioMinimo && req.body.salarioMaximo <= req.body.salarioMinimo) {
     throw new Error(`Salário máximo "${req.body.salarioMaximo}" deve ser maior que Salário mínimo "${req.body.salarioMinimo}"`);
   }
   if (req.body.salarioMinimo) data.salarioMinimo = req.body.salarioMinimo;
   if (req.body.salarioMaximo) data.salarioMaximo = req.body.salarioMaximo;
   
-  if (req.body.idadeMaxima && req.body.idadeMinima && req.body.idadeMaxima >= req.body.idadeMinima) {
+  if (req.body.idadeMaxima && req.body.idadeMinima && req.body.idadeMaxima <= req.body.idadeMinima) {
     throw new Error(`Idade máxima "${req.body.idadeMaxima}" deve ser maior que Idade mínima "${req.body.idadeMinima}"`);
   }
   if (req.body.idadeMinima) data.idadeMinima = req.body.idadeMinima;
@@ -88,21 +93,19 @@ exports.save = async (req, res) => {
       throw new Error("Escolaridade inválida");
     data.escolaridade = req.body.escolaridade;
   }
-  if (req.body.generos) {
-    req.body.generos.forEach((genero, generoIdx) => {
-      if (!tiposGenero.includes(req.body.generos))
-        throw new Error(`Gênero ${generoIdx + 1} "${genero}" inválido`);
-    });
-    data.generos = req.body.generos;
+  if (req.body.genero) {
+    if (!tiposGenero.includes(req.body.genero))
+      throw new Error(`Gênero "${genero}" inválido`);
+    data.genero = req.body.genero;
   }
   if (req.body.tipoContrato) {
-    if (!tipo.includes(req.body.tipoContrato))
-      throw new Error(`Tipo de contrato "${tipoContrato}" inválido`);
+    if (!tiposContrato.includes(req.body.tipoContrato))
+      throw new Error(`Tipo de contrato "${req.body.tipoContrato}" inválido`);
     data.tipoContrato = req.body.tipoContrato;
   }
   if (req.body.modeloContrato) {
-    if (!tipo.includes(req.body.modeloContrato))
-      throw new Error(`Modelo de contrato "${modeloContrato}" inválido`);
+    if (!tiposModeloContrato.includes(req.body.modeloContrato))
+      throw new Error(`Modelo de contrato "${req.body.modeloContrato}" inválido`);
     data.modeloContrato = req.body.modeloContrato;
 
     if (req.body.modeloContrato === TIPO_MODELO_CONTRATO.HIBRIDO) {
@@ -114,8 +117,8 @@ exports.save = async (req, res) => {
     }
   }
   if (req.body.jornada) {
-    if (!tipo.includes(req.body.jornada))
-      throw new Error(`Jornada "${jornada}" inválida`);
+    if (!tiposJornada.includes(req.body.jornada))
+      throw new Error(`Jornada "${req.body.jornada}" inválida`);
     data.jornada = req.body.jornada;
   }
   if (req.body.linguagens) {
@@ -166,6 +169,17 @@ exports.save = async (req, res) => {
   if (req.body.ocultarEmpresa) data.ocultarEmpresa = !!req.body.ocultarEmpresa;
   if (req.body.analisePsicologo)
     data.analisePsicologo = !!req.body.analisePsicologo;
+
+  if (req.body.cargo?._id) {
+    data.cargo = req.body.cargo._id;
+  }
+  if (req.body.qualificacoes && req.body.qualificacoes.length > 0) {
+    data.qualificacoes = req.body.qualificacoes.map(x => x._id).filter(x => x);
+  }
+  if (req.body.habilidades) {
+    data.habilidades = req.body.habilidades.map(x => x._id).filter(x => x);
+  }
+
 
   if (req.body._id) {
     const vaga = VagaModel.findById(req.body._id);
