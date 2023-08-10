@@ -7,33 +7,53 @@ const EnderecoSchema = require("./endereco.schema");
 const { TIPO_GENERO, TIPO_ESTADO_CIVIL, TIPO_CNH } = require("./enums");
 
 const PFSchema = SchemaFactory({
-  nomePrimeiro: { type: String, required: true, minlength: 3, },
+  nomePrimeiro: { type: String, required: true, minlength: 3 },
   nomeUltimo: { type: String },
   nomePreferido: { type: String },
-  genero: { type: String, required: true, enum: Object.values(TIPO_GENERO), },
-  estadoCivil: { type: String, enum: Object.values(TIPO_ESTADO_CIVIL), },
+  genero: { type: String, required: true, enum: Object.values(TIPO_GENERO) },
+  estadoCivil: { type: String, enum: Object.values(TIPO_ESTADO_CIVIL) },
   nacionalidade: { type: String },
   nascimento: { type: Date, required: true },
-  categoriaCNH: { type: String, required: true, enum: Object.values(TIPO_CNH), default: TIPO_CNH.NONE },
-  
+
   endereco: { type: EnderecoSchema },
-  
-  isAleijado: { type: Boolean, default: false },
-  aceitaTrabalharDistancia: { type: Number, default: 0, },
-  aceitaMudarDistancia: { type: Number, default: 0, },
-  isPsiquiatra: { type: Boolean, default: false },
 
-  telefones: { type: [ ManySchema ] },
-  links: { type: [ ManySchema ] },
-  documentos: { type: [ ManySchema ] },
-  qualificacoes: { type: [ String ] },
-  
-  linguagens: { type: [ ManySchema ] },
-  projetosPessoais: { type: [ ProjetosPessoaisSchema ] },
-  escolaridades: { type: [ EscolaridadeSchema ] },
-  experienciasProfissionais: { type: [ ExperienciaProfissionalSchema ] },
+  pcd: { type: Boolean, default: false },
+  pcdDescrição: { type: String },
+  aceitaTrabalharDistancia: { type: Number, default: 0 },
+  aceitaMudarDistancia: { type: Number, default: 0 },
 
-  vagasSalvas: { type: [ String ] },
+  telefones: { type: [ManySchema] },
+  links: { type: [ManySchema] },
+  
+  cpf: { type: String },
+  rg: { type: String },
+  passaporte: { type: String },
+  cnh: { type: String },
+  categoriaCNH: {
+    type: String,
+    required: true,
+    enum: Object.values(TIPO_CNH),
+    default: TIPO_CNH.NONE,
+  },
+
+  qualificacoes: { type: [String] }, // aka Competencias
+  habilidades: { type: [String] },
+
+  objetivos: {
+    type: [
+      {
+        cargo: { type: String, required: true },
+        remuneracao: { type: Number, required: true },
+      },
+    ],
+  },
+
+  linguagens: { type: [ManySchema] },
+  projetosPessoais: { type: [ProjetosPessoaisSchema] },
+  escolaridades: { type: [EscolaridadeSchema] },
+  experienciasProfissionais: { type: [ExperienciaProfissionalSchema] },
+
+  vagasSalvas: { type: [String] },
 });
 
 module.exports = PFSchema;

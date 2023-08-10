@@ -29,21 +29,56 @@ const tiposCNH = Object.values(TIPO_CNH);
 // const QualificacaoSchema = require("../schemas/qualificacao.schema");
 const PFSchema = require("../schemas/pf.schema");
 const PJSchema = require("../schemas/pj.schema");
+const CBOSchema = require("../schemas/cbo.schema")
+const HabilidadeSchema = require("../schemas/habilidade.schema");
+const QualificacaoSchema = require("../schemas/qualificacao.schema");
 const validateDocumento = require("../helpers/validateDocumento");
 const parseDMYdate = require("../helpers/parseDMYdate");
 
 const PFModel = mongoose.model("PF", PFSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
+const CBOModel = mongoose.model("CBO", CBOSchema);
+const HabilidadeModel = mongoose.model("Habilidade", HabilidadeSchema);
+const QualificacaoModel = mongoose.model("Qualificacao", QualificacaoSchema);
 
 exports.getSelf = async (req, res) => {
   const { _id, plano } = req.usuario || {};
   if (!_id) throw new Error("Usuário não encontrado na sessão");
+
   if (plano.startsWith("PJ")) {
     const dados = await PJModel.findById(_id);
     return dados;
+
   } else {
-    const dados = await PFModel.findById(_id);
+    const dados = await PFModel.findById(_id).lean();
+    if (dados.objetivos?.length > 0) {
+      for (let i = 0; i < dados.objetivos.length; i++) {
+        const cargoObj = await CBOModel.findById(dados.objetivos[i].cargo)
+        dados.objetivos[i].cargo = cargoObj;
+      }
+    }
+    if (dados.experienciasProfissionais?.length > 0) {
+      for (let i = 0; i < dados.experienciasProfissionais.length; i++) {
+        const cargoObj = await CBOModel.findById(dados.experienciasProfissionais[i].cargo).lean()
+        dados.experienciasProfissionais[i].cargo = cargoObj;
+
+        if (dados.experienciasProfissionais[i].qualificacoes?.length > 0) {
+          for (let j = 0; j < dados.experienciasProfissionais[i].qualificacoes.length; j++) {
+            const qualificacaoObj = await QualificacaoModel.findById(dados.experienciasProfissionais[i].qualificacoes[j]).lean()
+            console.log({qualificacaoObj})
+            dados.experienciasProfissionais[i].qualificacoes[j] = qualificacaoObj
+          }
+        }
+      }
+    }
+    if (dados.habilidades?.length > 0) {
+      for (let i = 0; i < dados.habilidades.length; i++) {
+        const habilidadeObj = await HabilidadeModel.findById(dados.habilidades[i])
+        dados.habilidades[i] = habilidadeObj;
+      }
+    }
     return dados;
+
   }
 };
 
@@ -56,91 +91,6 @@ exports.getById = async (req, res) => {
   };
 }
 
-const example_pf = {
-  nomePrimeiro: "",
-  nomeUltimo: "",
-  nomePreferido: "",
-  genero: "",
-  estadoCivil: "",
-  nacionalidade: "",
-  nascimento: "date",
-  categoriaCNH: "",
-  isAleijado: false,
-  aceitaTrabalharDistancia: 123,
-  aceitaMudarDistancia: 123,
-  isPsiquiatra: false,
-  endereco: {
-    cep: "",
-    pais: "",
-    estado: "",
-    cidade: "",
-    bairro: "",
-    rua: "",
-    numero: "",
-    complemento: "",
-  },
-  telefones: [
-    {
-      valor: "",
-      descricao: "",
-      tipo: "",
-      isPrimario: false,
-    },
-  ],
-  links: [
-    {
-      valor: "",
-      descricao: "",
-      tipo: "",
-      isPrimario: false,
-    },
-  ],
-  documentos: [
-    {
-      valor: "",
-      descricao: "",
-      tipo: "",
-      isPrimario: false,
-    },
-  ],
-  qualificacoes: [""],
-  linguagens: [
-    {
-      valor: "",
-      descricao: "",
-      tipo: "",
-      isPrimario: false,
-    },
-  ],
-  projetosPessoais: [
-    {
-      titulo: "",
-      url: "",
-      descricao: "",
-      quando: "",
-    },
-  ],
-  escolaridades: [
-    {
-      nome: "",
-      nivel: "",
-      isCompleto: "",
-      inicio: "",
-      fim: "",
-    },
-  ],
-  experienciasProfissionais: [
-    {
-      cargo: "",
-      empresa: "",
-      descricao: "",
-      inicio: "",
-      fim: "",
-      isAtual: "",
-      qualificacoes: "",
-    },
-  ],
-};
 
 exports.postPF = async (req, res) => {
   const { _id, plano } = req.usuario || {};
@@ -153,14 +103,14 @@ exports.postPF = async (req, res) => {
   if (req.body.nomePreferido) data.nomePreferido = req.body.nomePreferido;
   if (req.body.nacionalidade) data.nacionalidade = req.body.nacionalidade;
   if (req.body.nascimento) data.nascimento = parseDMYdate(req.body.nascimento);
-  if (req.body.isAleijado) data.isAleijado = !!req.body.isAleijado;
+  if (req.body.pcd) data.pcd = !!req.body.pcd;
+  if (req.body.pcdDescrição) data.pcdDescrição = !!req.body.pcdDescrição;
   if (req.body.aceitaTrabalharDistancia)
     data.aceitaTrabalharDistancia = Math.floor(
       req.body.aceitaTrabalharDistancia
     );
   if (req.body.aceitaMudarDistancia)
     data.aceitaMudarDistancia = Math.floor(req.body.aceitaMudarDistancia);
-  if (req.body.isPsiquiatra) data.isPsiquiatra = !!req.body.isPsiquiatra;
   if (req.body.genero) {
     if (!tiposGenero.includes(req.body.genero))
       throw new Error(`Tipo de gênero inválido "${req.body.genero}`);
@@ -228,19 +178,20 @@ exports.postPF = async (req, res) => {
     }
   }
 
-  if (req.body.documentos) {
-    data.documentos = [];
-    if (req.body.documentos.length > 0) {
-      req.body.documentos.forEach((documento, idx) => {
-        if (!tiposDocumento.includes(documento.tipo))
-          throw new Error(`Tipo de documento ${idx + 1} inválido "${documento.tipo}"`);
-        if (!validateDocumento(documento.valor, documento.tipo))
-          throw new Error(`Documento ${idx + 1} inválido "${documento.valor}"`);
-        const dataDocumento = {
-          valor: documento.valor,
-          tipo: documento.tipo,
-        };
-        data.documentos.push(dataDocumento);
+  if (req.body.cpf) data.cpf = req.body.cpf.replace(/[^0-9]/gi, '');
+  if (req.body.rg) data.rg = req.body.rg.replace(/[^0-9X]/gi, '');
+  if (req.body.passaporte) data.passaporte = req.body.passaporte.replace(/[^0-9]/gi, '');
+  if (req.body.cnh) data.cnh = req.body.cnh.replace(/[^0-9]/gi, '');
+
+  if (req.body.objetivos) {
+    data.objetivos = [];
+    if (req.body.objetivos.length > 0) {
+      req.body.objetivos.slice(0, 3).forEach((objetivo, idx) => {
+        const dataObjetivo = {
+          cargo: objetivo.cargo._id,
+          remuneracao: parseFloat(objetivo.remuneracao)
+        }
+        data.objetivos.push(dataObjetivo);
       });
     }
   }
@@ -335,8 +286,14 @@ exports.postPF = async (req, res) => {
           throw new Error(
             `Fim da Experiência Profissional ${idx + 1} deve ser antes do inicio`
           );
-        if (experienciaProfissional.cargo)
-          dataExperienciaProfissional.cargo = experienciaProfissional.cargo;
+
+        if (experienciaProfissional.qualificacoes && experienciaProfissional.qualificacoes.length > 0)
+          dataExperienciaProfissional.qualificacoes = experienciaProfissional.qualificacoes.map(x => x._id);
+        if (experienciaProfissional.cargo && experienciaProfissional.cargo._id)
+          dataExperienciaProfissional.cargo = experienciaProfissional.cargo._id;
+      
+        if (experienciaProfissional.ramoAtividadeEmpresa)
+          dataExperienciaProfissional.ramoAtividadeEmpresa = experienciaProfissional.ramoAtividadeEmpresa;
         if (experienciaProfissional.empresa)
           dataExperienciaProfissional.empresa = experienciaProfissional.empresa;
         if (experienciaProfissional.descricao)
@@ -348,22 +305,21 @@ exports.postPF = async (req, res) => {
           dataExperienciaProfissional.fim = parseDMYdate(experienciaProfissional.fim);
         if (experienciaProfissional.isAtual)
           dataExperienciaProfissional.isAtual = experienciaProfissional.isAtual;
-        if (experienciaProfissional.qualificacoes)
-          dataExperienciaProfissional.qualificacoes =
-            experienciaProfissional.qualificacoes;
         data.experienciasProfissionais.push(dataExperienciaProfissional);
       });
     }
   }
 
-  if (req.body.qualificacoes) {
-    data.qualificacoes = req.body.qualificacoes;
+  if (req.body.qualificacoes && req.body.qualificacoes.length > 0) {
+    data.qualificacoes = req.body.qualificacoes.map(x => x._id).filter(x => x);
+  }
+
+  if (req.body.habilidades) {
+    data.habilidades = req.body.habilidades.map(x => x._id).filter(x => x);
   }
 
   let info;
   const existsObj = await PFModel.findById(_id);
-  console.log(data);
-  console.log(existsObj);
   if (existsObj) {
     info = await PFModel.findByIdAndUpdate(_id, data, { runValidators: true });
   } else {
@@ -375,42 +331,6 @@ exports.postPF = async (req, res) => {
 //
 //
 
-const example_pj = {
-  nomeResponsavel: "",
-  razaoSocial: "",
-  nomeFantasia: "",
-  endereco: {
-    cep: "",
-    pais: "",
-    estado: "",
-    cidade: "",
-    bairro: "",
-    rua: "",
-    numero: "",
-    complemento: "",
-  },
-  telefones: [
-    {
-      valor: "",
-      descricao: "",
-      tipo: "",
-    },
-  ],
-  links: [
-    {
-      valor: "",
-      descricao: "",
-      tipo: "",
-    },
-  ],
-  documentos: [
-    {
-      valor: "",
-      descricao: "",
-      tipo: "",
-    },
-  ],
-};
 
 exports.postPJ = async (req, res) => {
   const { _id, plano } = req.usuario || {};
@@ -492,8 +412,6 @@ exports.postPJ = async (req, res) => {
 
   let info;
   const existsObj = await PJModel.findById(_id);
-  console.log(data);
-  console.log(existsObj);
   if (existsObj) {
     info = await PJModel.findByIdAndUpdate(_id, data, { runValidators: true });
   } else {
