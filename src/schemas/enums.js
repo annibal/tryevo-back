@@ -94,6 +94,8 @@ exports.TIPO_CNH = {
 
 exports.TIPO_QUESTAO = {
   TEXTO: 'TEXTO',
+  SLIDER: 'SLIDER',
+  ESCOLHA: 'ESCOLHA',
 }
 
 exports.TIPO_MODELO_CONTRATO = {

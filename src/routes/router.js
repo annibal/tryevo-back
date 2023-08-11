@@ -67,6 +67,21 @@ app.get(
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.getSingleUser)
 );
+app.post(
+  "/auth/remocao-dados",
+  guard(),
+  routeWrapper(authController.remocaoDados)
+);
+app.post(
+  "/auth/remocao-historico",
+  guard(),
+  routeWrapper(authController.remocaoHistorico)
+);
+app.post(
+  "/auth/remocao-total",
+  guard(),
+  routeWrapper(authController.remocaoTotal)
+);
 
 // =====================
 // Personal Data
@@ -172,6 +187,16 @@ app.get(
 );
 app.post(
   "/vaga",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(vagaController.save)
+);
+app.post(
+  "/vaga/:id",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,

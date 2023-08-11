@@ -22,8 +22,17 @@ const tiposJornada = Object.values(TIPO_JORNADA);
 
 const VagaSchema = require("../schemas/vaga.schema");
 const PJSchema = require("../schemas/pj.schema");
+const PFSchema = require("../schemas/pf.schema");
+const CBOSchema = require("../schemas/cbo.schema");
+const HabilidadeSchema = require("../schemas/habilidade.schema");
+const QualificacaoSchema = require("../schemas/qualificacao.schema");
+
 const VagaModel = mongoose.model("Vaga", VagaSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
+const PFModel = mongoose.model("PF", PFSchema);
+const CBOModel = mongoose.model("CBO", CBOSchema);
+const HabilidadeModel = mongoose.model("Habilidade", HabilidadeSchema);
+const QualificacaoModel = mongoose.model("Qualificacao", QualificacaoSchema);
 
 const exemplo_vaga = {
   titulo: "String",
@@ -64,6 +73,8 @@ const exemplo_vaga = {
 
 exports.save = async (req, res) => {
   const data = {};
+
+  if (req.body.active != null) data.active = !!req.body.active;
 
   if (req.body.titulo) data.titulo = req.body.titulo;
   if (req.body.descricao) data.descricao = req.body.descricao;
@@ -155,6 +166,11 @@ exports.save = async (req, res) => {
           throw new Error("Tipo de questão inválido");
         dataQuestao.tipo = questao.tipo;
       }
+      if (questao.minimo != null) dataQuestao.minimo = questao.minimo;
+      if (questao.maximo != null) dataQuestao.maximo = questao.maximo;
+      if (questao.escolhas) dataQuestao.escolhas = questao.escolhas
+        .map(x => x?.value != null ? x.value : x)
+        .filter(x => x);
       if (questao.isObrigatorio)
         dataQuestao.isObrigatorio = !!questao.isObrigatorio;
       data.questoes.push(dataQuestao);
@@ -181,12 +197,13 @@ exports.save = async (req, res) => {
   }
 
 
-  if (req.body._id) {
-    const vaga = VagaModel.findById(req.body._id);
+  if (req.params.id) {
+    const vaga = await VagaModel.findById(req.params.id);
     if (vaga.ownerId !== req.usuario._id)
-      throw new Error("Acesso negado ao alterar vaga criada por outrém");
+      throw new Error('Acesso negado ao alterar vaga criada por outrém');
+      // throw new Error(`Acesso negado ao alterar vaga criada por outrém - vaga.ownerId: ${vaga.ownerId}, usuario._id: ${req.usuario._id}`);
 
-    return await VagaModel.findByIdAndUpdate(req.body._id, data, {
+    return await VagaModel.findByIdAndUpdate(req.params.id, data, {
       new: true,
       runValidators: true,
     });
@@ -213,8 +230,25 @@ exports.delete = async (req, res) => {
 
 exports.show = async (req, res) => {
   const id = req.params.id;
-  let vaga = await VagaModel.findById(id);
+  let vaga = await VagaModel.findById(id).lean();
   if (!vaga) throw new Error("Vaga não encontrada");
+
+  if (vaga.cargo) {
+    const cargoObj = await CBOModel.findById(vaga.cargo).lean();
+    vaga.cargo = cargoObj
+  }
+  if (vaga.qualificacoes?.length > 0) {
+    for (let i=0; i<vaga.qualificacoes.length; i++) {
+      const qualificacoesObj = await QualificacaoModel.findById(vaga.qualificacoes[i]).lean();
+      vaga.qualificacoes[i] = qualificacoesObj;
+    }
+  }
+  if (vaga.habilidades?.length > 0) {
+    for (let i=0; i<vaga.habilidades.length; i++) {
+      const habilidadesObj = await HabilidadeModel.findById(vaga.habilidades[i]).lean();
+      vaga.habilidades[i] = habilidadesObj;
+    }
+  }
 
   if (!vaga.ocultarEmpresa) {
     const empresa = await PJModel.findById(
@@ -222,7 +256,7 @@ exports.show = async (req, res) => {
       "endereco nomeFantasia telefones links"
     );
     vaga = {
-      ...vaga.toJSON(),
+      ...vaga,
       empresa,
     };
   }
@@ -245,7 +279,7 @@ exports.listMine = async (req, res) => {
   const total = await VagaModel.countDocuments(search);
   let data = await VagaModel.find(
     search,
-    "_id titulo descricao tipoContrato qualificacoes"
+    "_id titulo descricao tipoContrato qualificacoes active"
   )
     .sort({ [sort]: -1 })
     .skip(from)
@@ -256,6 +290,7 @@ exports.listMine = async (req, res) => {
     titulo: vaga.titulo,
     tipoContrato: vaga.tipoContrato,
     qualificacoes: vaga.qualificacoes,
+    active: vaga.active,
     desc: vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300),
   }));
   return {
@@ -274,7 +309,7 @@ exports.listMine = async (req, res) => {
 exports.list = async (req, res) => {
   const { from = 0, to = 30, q, sort = "createdAt" } = req.query;
 
-  let search = {};
+  let search = { active: true };
   if (q) search.titulo = { $regex: q, $options: "i" };
 
   const total = await VagaModel.countDocuments(search);

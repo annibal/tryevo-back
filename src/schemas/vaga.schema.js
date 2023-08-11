@@ -12,6 +12,7 @@ const ManySchema = require("./many.schema");
 const VagaQuestaoSchema = require("./vaga-questao.schema");
 
 const VagaSchema = SchemaFactory({
+  active: { type: Boolean },
   titulo: { type: String, required: true },
   descricao: { type: String, required: true },
 

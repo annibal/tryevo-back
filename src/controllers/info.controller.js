@@ -46,14 +46,14 @@ exports.getSelf = async (req, res) => {
   if (!_id) throw new Error("Usuário não encontrado na sessão");
 
   if (plano.startsWith("PJ")) {
-    const dados = await PJModel.findById(_id);
+    const dados = await PJModel.findById(_id).lean();
     return dados;
 
   } else {
     const dados = await PFModel.findById(_id).lean();
     if (dados.objetivos?.length > 0) {
       for (let i = 0; i < dados.objetivos.length; i++) {
-        const cargoObj = await CBOModel.findById(dados.objetivos[i].cargo)
+        const cargoObj = await CBOModel.findById(dados.objetivos[i].cargo).lean()
         dados.objetivos[i].cargo = cargoObj;
       }
     }
@@ -73,7 +73,7 @@ exports.getSelf = async (req, res) => {
     }
     if (dados.habilidades?.length > 0) {
       for (let i = 0; i < dados.habilidades.length; i++) {
-        const habilidadeObj = await HabilidadeModel.findById(dados.habilidades[i])
+        const habilidadeObj = await HabilidadeModel.findById(dados.habilidades[i]).lean()
         dados.habilidades[i] = habilidadeObj;
       }
     }
@@ -178,10 +178,10 @@ exports.postPF = async (req, res) => {
     }
   }
 
-  if (req.body.cpf) data.cpf = req.body.cpf.replace(/[^0-9]/gi, '');
-  if (req.body.rg) data.rg = req.body.rg.replace(/[^0-9X]/gi, '');
-  if (req.body.passaporte) data.passaporte = req.body.passaporte.replace(/[^0-9]/gi, '');
-  if (req.body.cnh) data.cnh = req.body.cnh.replace(/[^0-9]/gi, '');
+  if (req.body.cpf != null) data.cpf = req.body.cpf.replace(/[^0-9]/gi, '');
+  if (req.body.rg != null) data.rg = req.body.rg.replace(/[^0-9X]/gi, '');
+  if (req.body.passaporte != null) data.passaporte = req.body.passaporte.replace(/[^0-9]/gi, '');
+  if (req.body.cnh != null) data.cnh = req.body.cnh.replace(/[^0-9]/gi, '');
 
   if (req.body.objetivos) {
     data.objetivos = [];

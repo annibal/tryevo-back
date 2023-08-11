@@ -2,11 +2,16 @@ const bcrypt = require("bcryptjs");
 const config = require("../config");
 const jwt = require("jsonwebtoken");
 const id6 = require("../helpers/id6");
-
 const mongoose = require("mongoose");
-const UsuarioSchema = require("../schemas/usuario.schema");
 const { USUARIO_PLANOS } = require("../schemas/enums");
+
+const UsuarioSchema = require("../schemas/usuario.schema");
+const PFSchema = require("../schemas/pf.schema");
+const PJSchema = require("../schemas/pj.schema");
+
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
+const PFModel = mongoose.model("PF", PFSchema);
+const PJModel = mongoose.model("PJ", PJSchema);
 
 const encryptPassword = async (password) => {
   const hash = await bcrypt.hash(password, 7);
@@ -192,3 +197,32 @@ exports.allUsers = async (req, res) => {
     },
   };
 };
+
+
+const fnRemocaoDados = async (id) => {
+  const pfData = await PFModel.findByIdAndDelete(id);
+  const pjData = await PJModel.findByIdAndDelete(id);
+  if (!pfData && !pjData) throw new Error('Nenhum dado encontrado para esse usuário');
+  return {
+    pfData,
+    pjData,
+  };
+}
+
+exports.remocaoDados = async (req, res) => {
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
+  return await fnRemocaoDados(req.usuario?._id);
+}
+exports.remocaoHistorico = async (req, res) => {
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
+  throw new Error('Não implementado');
+  // Vagas Salvas
+  // Propostas
+}
+exports.remocaoTotal = async (req, res) => {
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
+  try {
+    await fnRemocaoDados(req.usuario?._id);
+  } catch (e) {}
+  return await UsuarioModel.findByIdAndDelete(req.usuario?._id);
+}
