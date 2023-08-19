@@ -9,6 +9,9 @@ const {
   TIPO_GENERO,
   TIPO_ESTADO_CIVIL,
   TIPO_CNH,
+  TIPO_CONTRATO,
+  TIPO_MODELO_CONTRATO,
+  TIPO_JORNADA,
 } = require("../schemas/enums");
 
 const tiposTelefone = Object.values(TIPO_TELEFONE);
@@ -19,6 +22,9 @@ const tiposEscolaridade = Object.values(TIPO_ESCOLARIDADE);
 const tiposGenero = Object.values(TIPO_GENERO);
 const tiposEstadoCivil = Object.values(TIPO_ESTADO_CIVIL);
 const tiposCNH = Object.values(TIPO_CNH);
+const tiposContrato = Object.values(TIPO_CONTRATO);
+const tiposModeloContrato = Object.values(TIPO_MODELO_CONTRATO);
+const tiposJornada = Object.values(TIPO_JORNADA);
 
 // const UsuarioSchema = require("../schemas/usuario.schema");
 // const ManySchema = require("../schemas/many.schema");
@@ -101,6 +107,7 @@ exports.postPF = async (req, res) => {
   if (req.body.nomePrimeiro) data.nomePrimeiro = req.body.nomePrimeiro;
   if (req.body.nomeUltimo) data.nomeUltimo = req.body.nomeUltimo;
   if (req.body.nomePreferido) data.nomePreferido = req.body.nomePreferido;
+  if (req.body.resumo) data.resumo = req.body.resumo;
   if (req.body.nacionalidade) data.nacionalidade = req.body.nacionalidade;
   if (req.body.nascimento) data.nascimento = parseDMYdate(req.body.nascimento);
   if (req.body.pcd) data.pcd = !!req.body.pcd;
@@ -189,10 +196,30 @@ exports.postPF = async (req, res) => {
       req.body.objetivos.slice(0, 3).forEach((objetivo, idx) => {
         const dataObjetivo = {
           cargo: objetivo.cargo._id,
-          remuneracao: parseFloat(objetivo.remuneracao)
+          remuneracao: parseFloat(objetivo.remuneracao),
+        }
+        if (objetivo.tipoContrato) {
+          if (!tiposContrato.includes(objetivo.tipoContrato)) {
+            throw new Error(`Tipo de contrato ${idx + 1} "${objetivo.tipoContrato}" inválido`);
+          }
+          dataObjetivo.tipoContrato = objetivo.tipoContrato;
+        }
+        if (objetivo.modeloContrato) {
+          if (!tiposModeloContrato.includes(objetivo.modeloContrato)) {
+            throw new Error(`Modelo de contrato ${idx + 1} "${objetivo.modeloContrato}" inválido`);
+          }
+          dataObjetivo.modeloContrato = objetivo.modeloContrato;
+        }
+        if (objetivo.jornada) {
+          if (!tiposJornada.includes(objetivo.jornada)) {
+            throw new Error(`Jornada ${idx + 1} "${objetivo.jornada}" inválida`);
+          }
+          dataObjetivo.jornada = objetivo.jornada;
         }
         data.objetivos.push(dataObjetivo);
       });
+      
+        
     }
   }
 
@@ -222,12 +249,27 @@ exports.postPF = async (req, res) => {
         const dataProjetoPessoal = {};
         if (projetoPessoal.titulo)
           dataProjetoPessoal.titulo = projetoPessoal.titulo;
-        if (projetoPessoal.url) dataProjetoPessoal.url = projetoPessoal.url;
         if (projetoPessoal.descricao)
           dataProjetoPessoal.descricao = projetoPessoal.descricao;
-        if (projetoPessoal.quando)
-          dataProjetoPessoal.quando = parseDMYdate(projetoPessoal.quando);
+        // if (projetoPessoal.url) dataProjetoPessoal.url = projetoPessoal.url;
+        // if (projetoPessoal.quando)
+        //   dataProjetoPessoal.quando = parseDMYdate(projetoPessoal.quando);
+        
         data.projetosPessoais.push(dataProjetoPessoal);
+      });
+    }
+  }
+  if (req.body.cursos) {
+    data.cursos = [];
+    if (req.body.cursos.length > 0) {
+      req.body.cursos.forEach((cursos) => {
+        const dataCurso = {};
+        if (cursos.titulo)
+          dataCurso.titulo = cursos.titulo;
+        if (cursos.descricao)
+          dataCurso.descricao = cursos.descricao;
+
+        data.cursos.push(dataCurso);
       });
     }
   }

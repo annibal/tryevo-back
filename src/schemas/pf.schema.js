@@ -4,12 +4,20 @@ const ProjetosPessoaisSchema = require("./projetos-pessoais.schema");
 const EscolaridadeSchema = require("./escolaridade.schema");
 const ExperienciaProfissionalSchema = require("./experiencia-profissional.schema");
 const EnderecoSchema = require("./endereco.schema");
-const { TIPO_GENERO, TIPO_ESTADO_CIVIL, TIPO_CNH } = require("./enums");
+const {
+  TIPO_GENERO,
+  TIPO_ESTADO_CIVIL,
+  TIPO_CNH,
+  TIPO_CONTRATO,
+  TIPO_MODELO_CONTRATO,
+  TIPO_JORNADA,
+} = require("./enums");
 
 const PFSchema = SchemaFactory({
   nomePrimeiro: { type: String, required: true, minlength: 3 },
   nomeUltimo: { type: String },
   nomePreferido: { type: String },
+  resumo: { type: String },
   genero: { type: String, required: true, enum: Object.values(TIPO_GENERO) },
   estadoCivil: { type: String, enum: Object.values(TIPO_ESTADO_CIVIL) },
   nacionalidade: { type: String },
@@ -44,12 +52,19 @@ const PFSchema = SchemaFactory({
       {
         cargo: { type: String, required: true },
         remuneracao: { type: Number, required: true },
+        tipoContrato: { type: String, enum: Object.values(TIPO_CONTRATO), required: true },
+        modeloContrato: { type: String, enum: Object.values(TIPO_MODELO_CONTRATO), required: true },
+        jornada: { type: String, enum: Object.values(TIPO_JORNADA), required: true },
       },
     ],
   },
 
   linguagens: { type: [ManySchema] },
   projetosPessoais: { type: [ProjetosPessoaisSchema] },
+  cursos: { type: [{
+    titulo: { type: String, required: true },
+    descricao: { type: String },
+  }] },
   escolaridades: { type: [EscolaridadeSchema] },
   experienciasProfissionais: { type: [ExperienciaProfissionalSchema] },
 
