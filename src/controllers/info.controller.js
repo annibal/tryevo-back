@@ -269,6 +269,17 @@ exports.postPF = async (req, res) => {
         if (cursos.descricao)
           dataCurso.descricao = cursos.descricao;
 
+        if (cursos.nomeEscola)
+          dataCurso.nomeEscola = cursos.nomeEscola;
+        if (cursos.inicio)
+          dataCurso.inicio = parseDMYdate(cursos.inicio);
+        if (cursos.isCursando)
+          dataCurso.isCursando = !!cursos.isCursando;
+        if (cursos.cargaHoraria)
+          dataCurso.cargaHoraria = cursos.cargaHoraria;
+        if (cursos.hasDiploma)
+          dataCurso.hasDiploma = !!cursos.hasDiploma;
+
         data.cursos.push(dataCurso);
       });
     }

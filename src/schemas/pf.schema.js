@@ -64,6 +64,11 @@ const PFSchema = SchemaFactory({
   cursos: { type: [{
     titulo: { type: String, required: true },
     descricao: { type: String },
+    nomeEscola: { type: String },
+    inicio: { type: Date },
+    isCursando: { type: Boolean },
+    cargaHoraria: { type: Number },
+    hasDiploma: { type: Boolean },
   }] },
   escolaridades: { type: [EscolaridadeSchema] },
   experienciasProfissionais: { type: [ExperienciaProfissionalSchema] },
