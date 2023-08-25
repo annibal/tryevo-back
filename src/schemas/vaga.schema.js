@@ -37,7 +37,14 @@ const VagaSchema = SchemaFactory({
   escolaridade: { type: String, enum: Object.values(TIPO_ESCOLARIDADE) },
   genero: { type: String, enum: Object.values(TIPO_GENERO) },
   linguagens: { type: [ManySchema] },
-  beneficiosOferecidos: { type: [ManySchema] },
+  beneficiosOferecidos: {
+    type: [
+      {
+        nome: { type: String, required: true },
+        valor: { type: String },
+      },
+    ],
+  },
   questoes: { type: [VagaQuestaoSchema] },
 
   pcd: { type: Boolean, default: false },
