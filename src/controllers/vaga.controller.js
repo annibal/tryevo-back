@@ -52,7 +52,7 @@ const exemplo_vaga = {
   diasPresencial: 2,
   jornada: "VESPERTINO",
   linguagens: [{ valor: "Portugues", tipo: "PROFICIENTE" }],
-  beneficiosOferecidos: [{ valor: 300, tipo: "Vale Alimentação" }],
+  beneficiosOferecidos: [{ valor: 300, nome: "Vale Alimentação" }],
   questoes: [{ titulo: "Questao 1", tipo: "TEXTO", isObrigatorio: true }],
   pcd: false,
   disponivelViagem: false,
@@ -210,6 +210,7 @@ exports.save = async (req, res) => {
   } else {
     data._id = id6();
     data.ownerId = req.usuario._id;
+    data.active = true;
     return await VagaModel.create(data);
   }
 };
