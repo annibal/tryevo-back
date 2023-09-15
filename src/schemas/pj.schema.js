@@ -14,6 +14,9 @@ const PJSchema = SchemaFactory({
   
   cnpj: { type: String, minlength: 14 },
   inscricaoEstadual: { type: String, minlength: 8 },
+
+  qtdFuncionarios: { type: Number },
+  faturamentoAnual: { type: Number },
 });
 
 module.exports = PJSchema;

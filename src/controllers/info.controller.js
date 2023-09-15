@@ -429,6 +429,9 @@ exports.postPJ = async (req, res) => {
   if (req.body.nomeFantasia) data.nomeFantasia = req.body.nomeFantasia;
   if (req.body.cnpj) data.cnpj = req.body.cnpj.replace(/[^0-9]/gi, '');
   if (req.body.inscricaoEstadual) data.inscricaoEstadual = req.body.inscricaoEstadual.replace(/[^0-9]/gi, '');
+  
+  if (req.body.qtdFuncionarios) data.qtdFuncionarios = req.body.qtdFuncionarios;
+  if (req.body.faturamentoAnual) data.faturamentoAnual = req.body.faturamentoAnual;
 
   if (req.body.endereco) {
     const endereco = req.body.endereco;
