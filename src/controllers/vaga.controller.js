@@ -68,7 +68,7 @@ const exemplo_vaga = {
     rua: "",
     numero: "",
     complemento: "",
-  }
+  },
 };
 
 exports.save = async (req, res) => {
@@ -81,14 +81,26 @@ exports.save = async (req, res) => {
   if (req.body.descricao) data.descricao = req.body.descricao;
   if (req.body.experiencia) data.experiencia = req.body.experiencia;
 
-  if (req.body.salarioMaximo && req.body.salarioMinimo && req.body.salarioMaximo <= req.body.salarioMinimo) {
-    throw new Error(`Salário máximo "${req.body.salarioMaximo}" deve ser maior que Salário mínimo "${req.body.salarioMinimo}"`);
+  if (
+    req.body.salarioMaximo &&
+    req.body.salarioMinimo &&
+    req.body.salarioMaximo <= req.body.salarioMinimo
+  ) {
+    throw new Error(
+      `Salário máximo "${req.body.salarioMaximo}" deve ser maior que Salário mínimo "${req.body.salarioMinimo}"`
+    );
   }
   if (req.body.salarioMinimo) data.salarioMinimo = req.body.salarioMinimo;
   if (req.body.salarioMaximo) data.salarioMaximo = req.body.salarioMaximo;
-  
-  if (req.body.idadeMaxima && req.body.idadeMinima && req.body.idadeMaxima <= req.body.idadeMinima) {
-    throw new Error(`Idade máxima "${req.body.idadeMaxima}" deve ser maior que Idade mínima "${req.body.idadeMinima}"`);
+
+  if (
+    req.body.idadeMaxima &&
+    req.body.idadeMinima &&
+    req.body.idadeMaxima <= req.body.idadeMinima
+  ) {
+    throw new Error(
+      `Idade máxima "${req.body.idadeMaxima}" deve ser maior que Idade mínima "${req.body.idadeMinima}"`
+    );
   }
   if (req.body.idadeMinima) data.idadeMinima = req.body.idadeMinima;
   if (req.body.idadeMaxima) data.idadeMaxima = req.body.idadeMaxima;
@@ -117,7 +129,9 @@ exports.save = async (req, res) => {
   }
   if (req.body.modeloContrato) {
     if (!tiposModeloContrato.includes(req.body.modeloContrato))
-      throw new Error(`Modelo de contrato "${req.body.modeloContrato}" inválido`);
+      throw new Error(
+        `Modelo de contrato "${req.body.modeloContrato}" inválido`
+      );
     data.modeloContrato = req.body.modeloContrato;
 
     if (req.body.modeloContrato === TIPO_MODELO_CONTRATO.HIBRIDO) {
@@ -145,7 +159,7 @@ exports.save = async (req, res) => {
   if (req.body.endereco) {
     const endereco = req.body.endereco;
     data.endereco = {};
-    if (endereco.cep) data.endereco.cep = endereco.cep.replace(/[^0-9]/gi, '');
+    if (endereco.cep) data.endereco.cep = endereco.cep.replace(/[^0-9]/gi, "");
     if (endereco.pais) data.endereco.pais = endereco.pais;
     if (endereco.estado) data.endereco.estado = endereco.estado;
     if (endereco.cidade) data.endereco.cidade = endereco.cidade;
@@ -169,9 +183,10 @@ exports.save = async (req, res) => {
       }
       if (questao.minimo != null) dataQuestao.minimo = questao.minimo;
       if (questao.maximo != null) dataQuestao.maximo = questao.maximo;
-      if (questao.escolhas) dataQuestao.escolhas = questao.escolhas
-        .map(x => x?.value != null ? x.value : x)
-        .filter(x => x);
+      if (questao.escolhas)
+        dataQuestao.escolhas = questao.escolhas
+          .map((x) => (x?.value != null ? x.value : x))
+          .filter((x) => x);
       if (questao.isObrigatorio)
         dataQuestao.isObrigatorio = !!questao.isObrigatorio;
       data.questoes.push(dataQuestao);
@@ -191,18 +206,19 @@ exports.save = async (req, res) => {
     data.cargo = req.body.cargo._id;
   }
   if (req.body.qualificacoes && req.body.qualificacoes.length > 0) {
-    data.qualificacoes = req.body.qualificacoes.map(x => x._id).filter(x => x);
+    data.qualificacoes = req.body.qualificacoes
+      .map((x) => x._id)
+      .filter((x) => x);
   }
   if (req.body.habilidades) {
-    data.habilidades = req.body.habilidades.map(x => x._id).filter(x => x);
+    data.habilidades = req.body.habilidades.map((x) => x._id).filter((x) => x);
   }
-
 
   if (req.params.id) {
     const vaga = await VagaModel.findById(req.params.id);
     if (vaga.ownerId !== req.usuario._id)
-      throw new Error('Acesso negado ao alterar vaga criada por outrém');
-      // throw new Error(`Acesso negado ao alterar vaga criada por outrém - vaga.ownerId: ${vaga.ownerId}, usuario._id: ${req.usuario._id}`);
+      throw new Error("Acesso negado ao alterar vaga criada por outrém");
+    // throw new Error(`Acesso negado ao alterar vaga criada por outrém - vaga.ownerId: ${vaga.ownerId}, usuario._id: ${req.usuario._id}`);
 
     return await VagaModel.findByIdAndUpdate(req.params.id, data, {
       new: true,
@@ -237,17 +253,21 @@ exports.show = async (req, res) => {
 
   if (vaga.cargo) {
     const cargoObj = await CBOModel.findById(vaga.cargo).lean();
-    vaga.cargo = cargoObj
+    vaga.cargo = cargoObj;
   }
   if (vaga.qualificacoes?.length > 0) {
-    for (let i=0; i<vaga.qualificacoes.length; i++) {
-      const qualificacoesObj = await QualificacaoModel.findById(vaga.qualificacoes[i]).lean();
+    for (let i = 0; i < vaga.qualificacoes.length; i++) {
+      const qualificacoesObj = await QualificacaoModel.findById(
+        vaga.qualificacoes[i]
+      ).lean();
       vaga.qualificacoes[i] = qualificacoesObj;
     }
   }
   if (vaga.habilidades?.length > 0) {
-    for (let i=0; i<vaga.habilidades.length; i++) {
-      const habilidadesObj = await HabilidadeModel.findById(vaga.habilidades[i]).lean();
+    for (let i = 0; i < vaga.habilidades.length; i++) {
+      const habilidadesObj = await HabilidadeModel.findById(
+        vaga.habilidades[i]
+      ).lean();
       vaga.habilidades[i] = habilidadesObj;
     }
   }
@@ -269,32 +289,63 @@ exports.show = async (req, res) => {
 };
 
 exports.listMine = async (req, res) => {
-  const { from = 0, to = 30, q, sort = "createdAt" } = req.query;
+  const { from = 0, to = 50, q, sort = "createdAt" } = req.query;
 
   let search = {
     ownerId: req.usuario._id,
   };
   if (q) search.titulo = { $regex: q, $options: "i" };
 
+  const select = [
+    "_id",
+    "titulo",
+    "apelido",
+    "cargo",
+    "active",
+    "descricao",
+    "tipoContrato",
+    "qualificacoes",
+  ];
+
   //TODO: propostas
 
   const total = await VagaModel.countDocuments(search);
-  let data = await VagaModel.find(
-    search,
-    "_id titulo descricao tipoContrato qualificacoes active"
-  )
+  let data = await VagaModel.find(search, select.join(" "))
     .sort({ [sort]: -1 })
     .skip(from)
     .limit(to - from)
     .exec();
-  data = data.map((vaga) => ({
-    _id: vaga._id,
-    titulo: vaga.titulo,
-    tipoContrato: vaga.tipoContrato,
-    qualificacoes: vaga.qualificacoes,
-    active: vaga.active,
-    desc: vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300),
-  }));
+
+  const cargos = data.map((vaga) => vaga.cargo).filter((x) => x);
+  let objCargos = [];
+
+  if (cargos.length > 0) {
+    objCargos = await CBOModel.find({
+      _id: { $in: cargos },
+    }).lean();
+  }
+
+  data = data.map((vaga) => {
+    const obj = select.reduce(
+      (all, curr) => ({
+        ...all,
+        [curr]: vaga[curr],
+      }),
+      {}
+    );
+    obj.desc = vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300);
+    delete obj.descricao;
+    
+    if (vaga.cargo) {
+      const objCargo = objCargos.find(x => x._id === vaga.cargo);
+      if (objCargo) {
+        obj.cargo = objCargo.nome;
+      }
+    }
+
+    return obj;
+  });
+
   return {
     data,
     meta: {
@@ -314,22 +365,54 @@ exports.list = async (req, res) => {
   let search = { active: true };
   if (q) search.titulo = { $regex: q, $options: "i" };
 
+  const select = [
+    "_id",
+    "titulo",
+    "apelido",
+    "cargo",
+    "active",
+    "descricao",
+    "tipoContrato",
+    "qualificacoes",
+  ];
+
   const total = await VagaModel.countDocuments(search);
-  let data = await VagaModel.find(
-    search,
-    "_id titulo descricao tipoContrato qualificacoes"
-  )
+  let data = await VagaModel.find(search, select.join(" "))
     .sort({ [sort]: -1 })
     .skip(from)
     .limit(to - from)
     .exec();
-  data = data.map((vaga) => ({
-    _id: vaga._id,
-    titulo: vaga.titulo,
-    tipoContrato: vaga.tipoContrato,
-    qualificacoes: vaga.qualificacoes,
-    desc: vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300),
-  }));
+
+  const cargos = data.map((vaga) => vaga.cargo).filter((x) => x);
+  let objCargos = [];
+
+  if (cargos.length > 0) {
+    objCargos = await CBOModel.find({
+      _id: { $in: cargos },
+    }).lean();
+  }
+
+  data = data.map((vaga) => {
+    const obj = select.reduce(
+      (all, curr) => ({
+        ...all,
+        [curr]: vaga[curr],
+      }),
+      {}
+    );
+    obj.desc = vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300);
+    delete obj.descricao;
+    
+    if (vaga.cargo) {
+      const objCargo = objCargos.find(x => x._id === vaga.cargo);
+      if (objCargo) {
+        obj.cargo = objCargo.nome;
+      }
+    }
+    
+    return obj;
+  });
+
   return {
     data,
     meta: {
