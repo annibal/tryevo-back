@@ -6,6 +6,7 @@ const {
   TIPO_LINK,
   FLUENCIA_LINGUAGEM,
   TIPO_ESCOLARIDADE,
+  STATUS_ESCOLARIDADE,
   TIPO_GENERO,
   TIPO_ESTADO_CIVIL,
   TIPO_CNH,
@@ -19,6 +20,7 @@ const tiposDocumento = Object.values(TIPO_DOCUMENTO);
 const tiposLink = Object.values(TIPO_LINK);
 const tiposFluenciaLinguagem = Object.values(FLUENCIA_LINGUAGEM);
 const tiposEscolaridade = Object.values(TIPO_ESCOLARIDADE);
+const statusEscolaridade = Object.values(STATUS_ESCOLARIDADE);
 const tiposGenero = Object.values(TIPO_GENERO);
 const tiposEstadoCivil = Object.values(TIPO_ESTADO_CIVIL);
 const tiposCNH = Object.values(TIPO_CNH);
@@ -137,7 +139,7 @@ exports.postPF = async (req, res) => {
   if (req.body.endereco) {
     const endereco = req.body.endereco;
     data.endereco = {};
-    if (endereco.cep) data.endereco.cep = endereco.cep;
+    if (endereco.cep) data.endereco.cep = endereco.cep.replace(/[^0-9]/gi, '');
     if (endereco.pais) data.endereco.pais = endereco.pais;
     if (endereco.estado) data.endereco.estado = endereco.estado;
     if (endereco.cidade) data.endereco.cidade = endereco.cidade;
@@ -156,7 +158,7 @@ exports.postPF = async (req, res) => {
         if (telefone.valor?.length < 8)
           throw new Error(`Telefone inválido "${telefone.valor}"`);
         const dataTelefone = {
-          valor: telefone.valor,
+          valor: telefone.valor.replace(/[^0-9]/gi, ''),
           tipo: telefone.tipo,
         };
         if (telefone.descricao) dataTelefone.descricao = telefone.descricao;
@@ -187,7 +189,7 @@ exports.postPF = async (req, res) => {
 
   if (req.body.cpf != null) data.cpf = req.body.cpf.replace(/[^0-9]/gi, '');
   if (req.body.rg != null) data.rg = req.body.rg.replace(/[^0-9X]/gi, '');
-  if (req.body.passaporte != null) data.passaporte = req.body.passaporte.replace(/[^0-9]/gi, '');
+  if (req.body.passaporte != null) data.passaporte = req.body.passaporte;
   if (req.body.cnh != null) data.cnh = req.body.cnh.replace(/[^0-9]/gi, '');
 
   if (req.body.objetivos) {
@@ -290,16 +292,7 @@ exports.postPF = async (req, res) => {
     if (req.body.escolaridades.length > 0) {
       req.body.escolaridades.forEach((escolaridade, idx) => {
         const dataEscolaridade = {};
-        if (escolaridade.isCompleto && !escolaridade.fim)
-          throw new Error(`Escolaridade ${idx + 1} informada como completa necessita da data de fim`);
-        if (!escolaridade.isCompleto && escolaridade.fim)
-          throw new Error(`Escolaridade ${idx + 1} não foi completada portanto não deve ter uma data de fim`);
-        if (
-          escolaridade.inicio &&
-          escolaridade.fim &&
-          new Date(parseDMYdate(escolaridade.inicio)) >= new Date(parseDMYdate(escolaridade.fim))
-        )
-          throw new Error(`Fim da Escolaridade ${idx + 1} deve ser antes do inicio`);
+        if (escolaridade.nome) dataEscolaridade.nome = escolaridade.nome;
         if (escolaridade.nivel) {
           if (!tiposEscolaridade.includes(escolaridade.nivel))
             throw new Error(
@@ -307,11 +300,51 @@ exports.postPF = async (req, res) => {
             );
           dataEscolaridade.nivel = escolaridade.nivel;
         }
-        if (escolaridade.isCompleto)
-          dataEscolaridade.isCompleto = !!escolaridade.isCompleto;
-        if (escolaridade.nome) dataEscolaridade.nome = escolaridade.nome;
-        if (escolaridade.inicio) dataEscolaridade.inicio = parseDMYdate(escolaridade.inicio);
-        if (escolaridade.fim) dataEscolaridade.fim = parseDMYdate(escolaridade.fim);
+        if (escolaridade.status) {
+          if (!statusEscolaridade.includes(escolaridade.status))
+            throw new Error(
+              `Tipo de escolaridade ${idx + 1} inválido "${escolaridade.status}"`
+            );
+          dataEscolaridade.status = escolaridade.status;
+        }
+        
+        dataEscolaridade.dataConclusao = null;
+        dataEscolaridade.dataInicio = null;
+        dataEscolaridade.dataPrevisaoTermino = null;
+
+        if (escolaridade.status === STATUS_ESCOLARIDADE.COMPLETO) {
+          if (!escolaridade.dataConclusao) {
+            throw new Error(`Para escolaridade ${idx + 1} status "Completo" é necessário informar a data de Conclusão`);
+          }
+          dataEscolaridade.dataConclusao = parseDMYdate(escolaridade.dataConclusao)
+        }
+        if (escolaridade.status === STATUS_ESCOLARIDADE.INCOMPLETO) {
+          // nenhuma data
+        }
+        if (escolaridade.status === STATUS_ESCOLARIDADE.CURSANDO) {
+          if (!escolaridade.dataInicio) {
+            throw new Error(`Para escolaridade ${idx + 1} status "Cursando" é necessário informar a data de Início`);
+          }
+          if (!escolaridade.dataPrevisaoTermino) {
+            throw new Error(`Para escolaridade ${idx + 1} status "Cursando" é necessário informar a data de Previsão de Término`);
+          }
+          if (
+            new Date(parseDMYdate(escolaridade.dataInicio)) >= new Date(parseDMYdate(escolaridade.dataPrevisaoTermino))
+          ) {
+            throw new Error(`Previsão de Término da escolaridade ${idx + 1} deve ser após data de Início`);
+          }
+          dataEscolaridade.dataInicio = parseDMYdate(escolaridade.dataInicio)
+          dataEscolaridade.dataPrevisaoTermino = parseDMYdate(escolaridade.dataPrevisaoTermino)
+        }
+        // if (escolaridade.isCompleto && !escolaridade.fim)
+        //   throw new Error(`Escolaridade ${idx + 1} informada como completa necessita da data de fim`);
+        // if (!escolaridade.isCompleto && escolaridade.fim)
+        //   throw new Error(`Escolaridade ${idx + 1} não foi completada portanto não deve ter uma data de fim`);
+        // if (escolaridade.isCompleto)
+        //   dataEscolaridade.isCompleto = !!escolaridade.isCompleto;
+        // if (escolaridade.inicio) dataEscolaridade.inicio = parseDMYdate(escolaridade.inicio);
+        // if (escolaridade.fim) dataEscolaridade.fim = parseDMYdate(escolaridade.fim);
+
         data.escolaridades.push(dataEscolaridade);
       });
     }
@@ -394,13 +427,13 @@ exports.postPJ = async (req, res) => {
   if (req.body.nomeResponsavel) data.nomeResponsavel = req.body.nomeResponsavel;
   if (req.body.razaoSocial) data.razaoSocial = req.body.razaoSocial;
   if (req.body.nomeFantasia) data.nomeFantasia = req.body.nomeFantasia;
-  if (req.body.cnpj) data.cnpj = req.body.cnpj;
-  if (req.body.inscricaoEstadual) data.inscricaoEstadual = req.body.cnpj;
+  if (req.body.cnpj) data.cnpj = req.body.cnpj.replace(/[^0-9]/gi, '');
+  if (req.body.inscricaoEstadual) data.inscricaoEstadual = req.body.inscricaoEstadual.replace(/[^0-9]/gi, '');
 
   if (req.body.endereco) {
     const endereco = req.body.endereco;
     data.endereco = {};
-    if (endereco.cep) data.endereco.cep = endereco.cep;
+    if (endereco.cep) data.endereco.cep = endereco.cep.replace(/[^0-9]/gi, '');
     if (endereco.pais) data.endereco.pais = endereco.pais;
     if (endereco.estado) data.endereco.estado = endereco.estado;
     if (endereco.cidade) data.endereco.cidade = endereco.cidade;
@@ -419,7 +452,7 @@ exports.postPJ = async (req, res) => {
         if (telefone.valor?.length < 8)
           throw new Error(`Telefone inválido "${telefone.valor}"`);
         const dataTelefone = {
-          valor: telefone.valor,
+          valor: telefone.valor.replace(/[^0-9]/gi, ''),
           tipo: telefone.tipo,
         };
         if (telefone.descricao) dataTelefone.descricao = telefone.descricao;
@@ -435,7 +468,7 @@ exports.postPJ = async (req, res) => {
       req.body.links.forEach((link) => {
         if (!tiposLink.includes(link.tipo))
           throw new Error(`Tipo de link inválido "${link.tipo}"`);
-        if (link.valor?.length < 5)
+        if (link.valor?.length < 3)
           throw new Error(`Link inválido "${link.valor}"`);
         const dataLink = {
           valor: link.valor,

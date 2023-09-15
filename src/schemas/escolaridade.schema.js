@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
-const { TIPO_ESCOLARIDADE } = require('./enums');
+const { TIPO_ESCOLARIDADE, STATUS_ESCOLARIDADE } = require('./enums');
 
 const EscolaridadeSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   nivel: { type: String, required: true, enum: Object.values(TIPO_ESCOLARIDADE), },
-  isCompleto: { type: String },
-  inicio: { type: Date, required: true },
-  fim: { type: Date },
+  status: { type: String, required: true, enum: Object.values(STATUS_ESCOLARIDADE) },
+  dataConclusao: { type: Date },
+  dataInicio: { type: Date },
+  dataPrevisaoTermino: { type: Date },
 });
 
 module.exports = EscolaridadeSchema;
