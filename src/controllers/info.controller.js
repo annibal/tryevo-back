@@ -40,6 +40,7 @@ const PJSchema = require("../schemas/pj.schema");
 const CBOSchema = require("../schemas/cbo.schema")
 const HabilidadeSchema = require("../schemas/habilidade.schema");
 const QualificacaoSchema = require("../schemas/qualificacao.schema");
+const VagaSchema = require("../schemas/vaga.schema");
 const validateDocumento = require("../helpers/validateDocumento");
 const parseDMYdate = require("../helpers/parseDMYdate");
 
@@ -48,6 +49,7 @@ const PJModel = mongoose.model("PJ", PJSchema);
 const CBOModel = mongoose.model("CBO", CBOSchema);
 const HabilidadeModel = mongoose.model("Habilidade", HabilidadeSchema);
 const QualificacaoModel = mongoose.model("Qualificacao", QualificacaoSchema);
+const VagaModel = mongoose.model("Vaga", VagaSchema);
 
 exports.getSelf = async (req, res) => {
   const { _id, plano } = req.usuario || {};
@@ -73,7 +75,6 @@ exports.getSelf = async (req, res) => {
         if (dados.experienciasProfissionais[i].qualificacoes?.length > 0) {
           for (let j = 0; j < dados.experienciasProfissionais[i].qualificacoes.length; j++) {
             const qualificacaoObj = await QualificacaoModel.findById(dados.experienciasProfissionais[i].qualificacoes[j]).lean()
-            console.log({qualificacaoObj})
             dados.experienciasProfissionais[i].qualificacoes[j] = qualificacaoObj
           }
         }
@@ -99,6 +100,34 @@ exports.getById = async (req, res) => {
   };
 }
 
+exports.setVagaSalva = async (req, res) => {
+  const { _id, plano } = req.usuario || {};
+  if (!plano.startsWith("PF")) throw new Error("Usuário não é PF");
+
+  if (!_id) throw new Error("Usuário não encontrado na sessão");
+  
+  const pfObj = await PFModel.findById(_id).lean();
+  if (!pfObj) throw new Error("Usuário não encontrado");
+
+  const vagaId = req.params.id
+  if (!vagaId) throw new Error("Id da vaga a salvar não informado");
+
+  const vagaObj = await VagaModel.findById(vagaId);
+  if (!vagaObj) throw new Error("Vaga não encontrada");
+
+  let vagasSalvas = (pfObj.vagasSalvas || []);
+  if (vagasSalvas.includes(vagaId)) {
+    vagasSalvas = vagasSalvas.filter(vaga => vaga !== vagaId)
+  } else {
+    vagasSalvas.push(vagaId);
+  }
+
+  pfObj.vagasSalvas = vagasSalvas;
+  
+  let info;
+  info = await PFModel.findByIdAndUpdate(_id, pfObj, { runValidators: true, new: true });
+  return info;
+}
 
 exports.postPF = async (req, res) => {
   const { _id, plano } = req.usuario || {};

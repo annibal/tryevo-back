@@ -34,43 +34,6 @@ const CBOModel = mongoose.model("CBO", CBOSchema);
 const HabilidadeModel = mongoose.model("Habilidade", HabilidadeSchema);
 const QualificacaoModel = mongoose.model("Qualificacao", QualificacaoSchema);
 
-const exemplo_vaga = {
-  titulo: "String",
-  descricao: "String",
-  experiencia: 1,
-  salarioMinimo: 1,
-  salarioMaximo: 1,
-  idadeMinima: 1,
-  idadeMaxima: 1,
-  testes: ["teste1", "teste2"],
-  qualificacoes: ["string"],
-  categoriaCNH: "NONE",
-  escolaridade: "FUNDAMENTAL",
-  generos: ["MASCULINO", "FEMININO"],
-  tipoContrato: "CLT",
-  modeloContrato: "HIBRIDO",
-  diasPresencial: 2,
-  jornada: "VESPERTINO",
-  linguagens: [{ valor: "Portugues", tipo: "PROFICIENTE" }],
-  beneficiosOferecidos: [{ valor: 300, nome: "Vale Alimentação" }],
-  questoes: [{ titulo: "Questao 1", tipo: "TEXTO", isObrigatorio: true }],
-  pcd: false,
-  disponivelViagem: false,
-  disponivelMudanca: false,
-  ocultarEmpresa: false,
-  analisePsicologo: false,
-  endereco: {
-    cep: "",
-    pais: "",
-    estado: "",
-    cidade: "",
-    bairro: "",
-    rua: "",
-    numero: "",
-    complemento: "",
-  },
-};
-
 exports.save = async (req, res) => {
   const data = {};
 
@@ -359,21 +322,52 @@ exports.listMine = async (req, res) => {
   };
 };
 
+exports.listSalvadas = async (req, res) => {
+  const { _id, plano } = req.usuario || {};
+  if (!plano.startsWith("PF")) throw new Error("Usuário não é PF");
+
+  if (!_id) throw new Error("Usuário não encontrado na sessão");
+  
+  const pfObj = await PFModel.findById(_id).lean();
+  if (!pfObj) throw new Error("Usuário não encontrado");
+  
+  const reqX = {
+    ...req,
+    query: {
+      ...req.query,
+      salvadas: (pfObj.vagasSalvas || [])
+    }
+  }
+
+  return await this.list(reqX, res);
+}
+
 exports.list = async (req, res) => {
-  const { from = 0, to = 30, q, sort = "createdAt" } = req.query;
+  const {
+    from = 0,
+    to = 30,
+    q,
+    sort = "createdAt",
+    salvadas,
+  } = req.query;
 
   let search = { active: true };
   if (q) search.titulo = { $regex: q, $options: "i" };
+  if (salvadas) search._id = { $in: salvadas };
 
   const select = [
     "_id",
+    "createdAt",
     "titulo",
-    "apelido",
     "cargo",
     "active",
     "descricao",
     "tipoContrato",
     "qualificacoes",
+    "habilidades",
+    "endereco",
+    "ocultarEmpresa",
+    "ownerId",
   ];
 
   const total = await VagaModel.countDocuments(search);
@@ -383,12 +377,34 @@ exports.list = async (req, res) => {
     .limit(to - from)
     .exec();
 
-  const cargos = data.map((vaga) => vaga.cargo).filter((x) => x);
+  const cargos = Array.from(new Set(data.map((vaga) => vaga.cargo).filter((x) => x)));
   let objCargos = [];
-
   if (cargos.length > 0) {
     objCargos = await CBOModel.find({
       _id: { $in: cargos },
+    }).lean();
+  }
+
+  const empresas = Array.from(new Set(data.map((vaga) => vaga.ocultarEmpresa ? null : vaga.ownerId).filter((x) => x)));
+  let objEmpresas = [];
+  if (empresas.length > 0) {
+    objEmpresas = await PJModel.find({
+      _id: { $in: empresas },
+    }).lean();
+  }
+  
+  const habilidades = Array.from(new Set(data.map((vaga) => vaga.habilidades).flat().filter((x) => x)));
+  let objHabilidades = [];
+  if (habilidades.length > 0) {
+    objHabilidades = await HabilidadeModel.find({
+      _id: { $in: habilidades },
+    }).lean();
+  }
+  const qualificacoes = Array.from(new Set(data.map((vaga) => vaga.qualificacoes).flat().filter((x) => x)));
+  let objQualificacoes = [];
+  if (qualificacoes.length > 0) {
+    objQualificacoes = await QualificacaoModel.find({
+      _id: { $in: qualificacoes },
     }).lean();
   }
 
@@ -406,10 +422,47 @@ exports.list = async (req, res) => {
     if (vaga.cargo) {
       const objCargo = objCargos.find(x => x._id === vaga.cargo);
       if (objCargo) {
-        obj.cargo = objCargo.nome;
+        obj.cargo = {
+          _id: objCargo._id,
+          nome: objCargo.nome,
+        }
       }
     }
-    
+
+    if (!vaga.ocultarEmpresa) {
+      const objEmpresa = objEmpresas.find(x => x._id === vaga.ownerId);
+      if (objEmpresa) {
+        obj.empresa = {
+          _id: objEmpresa._id,
+          nome: objEmpresa.nomeFantasia,
+        }
+      }
+    }
+    delete obj.ownerId;
+
+    if (vaga.habilidades) {
+      obj.habilidades = vaga.habilidades.map((habilidade) => {
+        const objHabilidade = objHabilidades.find(x => x._id === habilidade);
+        if (objHabilidade) {
+          return {
+            _id: objHabilidade._id,
+            nome: objHabilidade.nome,
+          }
+        }
+      }).filter(x => x)
+    }
+    if (vaga.qualificacoes) {
+      obj.qualificacoes = vaga.qualificacoes.map((qualificacao) => {
+        const objQualificacao = objQualificacoes.find(x => x._id === qualificacao);
+        if (objQualificacao) {
+          return {
+            _id: objQualificacao._id,
+            nome: objQualificacao.nome,
+          }
+        }
+      }).filter(x => x)
+    }
+
     return obj;
   });
 

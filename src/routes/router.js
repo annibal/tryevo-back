@@ -91,6 +91,7 @@ app.get("/info/self", guard(), routeWrapper(infoController.getSelf));
 app.get("/info/other/:id", guard([USUARIO_PLANOS.MASTER_ADMIN]), routeWrapper(infoController.getById));
 app.post("/info/pf", guard(), routeWrapper(infoController.postPF));
 app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
+app.post("/info/salvar-vaga/:id", guard(), routeWrapper(infoController.setVagaSalva));
 
 // =====================
 // CBO - Cadastro Brasileiro de Ocupações
@@ -174,6 +175,7 @@ app.delete(
 // =====================
 
 app.get("/vagas", routeWrapper(vagaController.list));
+app.get("/vagas-salvas", guard([]), routeWrapper(vagaController.listSalvadas));
 app.get("/vaga/:id", routeWrapper(vagaController.show));
 app.get(
   "/minhas-vagas",
