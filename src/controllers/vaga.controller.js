@@ -77,6 +77,7 @@ exports.save = async (req, res) => {
   if (req.body.active != null) data.active = !!req.body.active;
 
   if (req.body.titulo) data.titulo = req.body.titulo;
+  if (req.body.apelido) data.apelido = req.body.apelido;
   if (req.body.descricao) data.descricao = req.body.descricao;
   if (req.body.experiencia) data.experiencia = req.body.experiencia;
 
@@ -144,7 +145,7 @@ exports.save = async (req, res) => {
   if (req.body.endereco) {
     const endereco = req.body.endereco;
     data.endereco = {};
-    if (endereco.cep) data.endereco.cep = endereco.cep;
+    if (endereco.cep) data.endereco.cep = endereco.cep.replace(/[^0-9]/gi, '');
     if (endereco.pais) data.endereco.pais = endereco.pais;
     if (endereco.estado) data.endereco.estado = endereco.estado;
     if (endereco.cidade) data.endereco.cidade = endereco.cidade;

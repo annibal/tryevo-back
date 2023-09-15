@@ -15,6 +15,7 @@ const VagaSchema = SchemaFactory({
   active: { type: Boolean },
   titulo: { type: String, required: true },
   descricao: { type: String, required: true },
+  apelido: { type: String },
 
   cargo: { type: String },
   experiencia: { type: Number },
