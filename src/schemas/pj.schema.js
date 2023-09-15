@@ -12,8 +12,8 @@ const PJSchema = SchemaFactory({
   telefones: { type: [ ManySchema ] },
   links: { type: [ ManySchema ] },
   
-  cnpj: { type: String },
-  inscricaoEstadual: { type: String },
+  cnpj: { type: String, minlength: 14 },
+  inscricaoEstadual: { type: String, minlength: 8 },
 });
 
 module.exports = PJSchema;
