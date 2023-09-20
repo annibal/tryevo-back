@@ -54,6 +54,15 @@ const VagaSchema = SchemaFactory({
 
   ocultarEmpresa: { type: Boolean, default: false },
   analisePsicologo: { type: Boolean, default: false },
+
+  integrarLinkedin: { type: Boolean, default: false },
+  integrarLinkedinConfig: { type: String },
+  integrarCatho: { type: Boolean, default: false },
+  integrarCathoConfig: { type: String },
+  integrarCurriculos: { type: Boolean, default: false },
+  integrarCurriculosConfig: { type: String },
+  integrarInfojobs: { type: Boolean, default: false },
+  integrarInfojobsConfig: { type: String },
 });
 
 module.exports = VagaSchema;

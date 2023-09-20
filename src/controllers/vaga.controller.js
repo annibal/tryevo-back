@@ -156,15 +156,45 @@ exports.save = async (req, res) => {
     });
   }
 
-  if (req.body.pcd) data.pcd = !!req.body.pcd;
-  if (req.body.disponivelViagem)
-    data.disponivelViagem = !!req.body.disponivelViagem;
-  if (req.body.disponivelMudanca)
-    data.disponivelMudanca = !!req.body.disponivelMudanca;
-  if (req.body.ocultarEmpresa) data.ocultarEmpresa = !!req.body.ocultarEmpresa;
-  if (req.body.analisePsicologo)
-    data.analisePsicologo = !!req.body.analisePsicologo;
-
+  data.pcd = !!req.body.pcd;
+  data.disponivelViagem = !!req.body.disponivelViagem;
+  data.disponivelMudanca = !!req.body.disponivelMudanca;
+  data.ocultarEmpresa = !!req.body.ocultarEmpresa;
+  data.analisePsicologo = !!req.body.analisePsicologo;
+  
+  data.integrarLinkedin = !!req.body.integrarLinkedin;
+  if (req.body.integrarLinkedin) {
+    if (req.body.integrarLinkedinConfig) {
+      data.integrarLinkedinConfig = req.body.integrarLinkedinConfig;
+    }
+  } else {
+    data.integrarLinkedinConfig = '';
+  }
+  data.integrarCatho = !!req.body.integrarCatho;
+  if (req.body.integrarCatho) {
+    if (req.body.integrarCathoConfig) {
+      data.integrarCathoConfig = req.body.integrarCathoConfig;
+    }
+  } else {
+    data.integrarCathoConfig = '';
+  }
+  data.integrarCurriculos = !!req.body.integrarCurriculos;
+  if (req.body.integrarCurriculos) {
+    if (req.body.integrarCurriculosConfig) {
+      data.integrarCurriculosConfig = req.body.integrarCurriculosConfig;
+    }
+  } else {
+    data.integrarCurriculosConfig = '';
+  }
+  data.integrarInfojobs = !!req.body.integrarInfojobs;
+  if (req.body.integrarInfojobs) {
+    if (req.body.integrarInfojobsConfig) {
+      data.integrarInfojobsConfig = req.body.integrarInfojobsConfig;
+    }
+  } else {
+    data.integrarInfojobsConfig = '';
+  }
+  
   if (req.body.cargo?._id) {
     data.cargo = req.body.cargo._id;
   }
@@ -298,9 +328,9 @@ exports.listMine = async (req, res) => {
     );
     obj.desc = vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300);
     delete obj.descricao;
-    
+
     if (vaga.cargo) {
-      const objCargo = objCargos.find(x => x._id === vaga.cargo);
+      const objCargo = objCargos.find((x) => x._id === vaga.cargo);
       if (objCargo) {
         obj.cargo = objCargo.nome;
       }
@@ -327,29 +357,23 @@ exports.listSalvadas = async (req, res) => {
   if (!plano.startsWith("PF")) throw new Error("Usuário não é PF");
 
   if (!_id) throw new Error("Usuário não encontrado na sessão");
-  
+
   const pfObj = await PFModel.findById(_id).lean();
   if (!pfObj) throw new Error("Usuário não encontrado");
-  
+
   const reqX = {
     ...req,
     query: {
       ...req.query,
-      salvadas: (pfObj.vagasSalvas || [])
-    }
-  }
+      salvadas: pfObj.vagasSalvas || [],
+    },
+  };
 
   return await this.list(reqX, res);
-}
+};
 
 exports.list = async (req, res) => {
-  const {
-    from = 0,
-    to = 30,
-    q,
-    sort = "createdAt",
-    salvadas,
-  } = req.query;
+  const { from = 0, to = 30, q, sort = "createdAt", salvadas } = req.query;
 
   let search = { active: true };
   if (q) search.titulo = { $regex: q, $options: "i" };
@@ -377,7 +401,9 @@ exports.list = async (req, res) => {
     .limit(to - from)
     .exec();
 
-  const cargos = Array.from(new Set(data.map((vaga) => vaga.cargo).filter((x) => x)));
+  const cargos = Array.from(
+    new Set(data.map((vaga) => vaga.cargo).filter((x) => x))
+  );
   let objCargos = [];
   if (cargos.length > 0) {
     objCargos = await CBOModel.find({
@@ -385,22 +411,42 @@ exports.list = async (req, res) => {
     }).lean();
   }
 
-  const empresas = Array.from(new Set(data.map((vaga) => vaga.ocultarEmpresa ? null : vaga.ownerId).filter((x) => x)));
+  const empresas = Array.from(
+    new Set(
+      data
+        .map((vaga) => (vaga.ocultarEmpresa ? null : vaga.ownerId))
+        .filter((x) => x)
+    )
+  );
   let objEmpresas = [];
   if (empresas.length > 0) {
     objEmpresas = await PJModel.find({
       _id: { $in: empresas },
     }).lean();
   }
-  
-  const habilidades = Array.from(new Set(data.map((vaga) => vaga.habilidades).flat().filter((x) => x)));
+
+  const habilidades = Array.from(
+    new Set(
+      data
+        .map((vaga) => vaga.habilidades)
+        .flat()
+        .filter((x) => x)
+    )
+  );
   let objHabilidades = [];
   if (habilidades.length > 0) {
     objHabilidades = await HabilidadeModel.find({
       _id: { $in: habilidades },
     }).lean();
   }
-  const qualificacoes = Array.from(new Set(data.map((vaga) => vaga.qualificacoes).flat().filter((x) => x)));
+  const qualificacoes = Array.from(
+    new Set(
+      data
+        .map((vaga) => vaga.qualificacoes)
+        .flat()
+        .filter((x) => x)
+    )
+  );
   let objQualificacoes = [];
   if (qualificacoes.length > 0) {
     objQualificacoes = await QualificacaoModel.find({
@@ -418,49 +464,57 @@ exports.list = async (req, res) => {
     );
     obj.desc = vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300);
     delete obj.descricao;
-    
+
     if (vaga.cargo) {
-      const objCargo = objCargos.find(x => x._id === vaga.cargo);
+      const objCargo = objCargos.find((x) => x._id === vaga.cargo);
       if (objCargo) {
         obj.cargo = {
           _id: objCargo._id,
           nome: objCargo.nome,
-        }
+        };
       }
     }
 
     if (!vaga.ocultarEmpresa) {
-      const objEmpresa = objEmpresas.find(x => x._id === vaga.ownerId);
+      const objEmpresa = objEmpresas.find((x) => x._id === vaga.ownerId);
       if (objEmpresa) {
         obj.empresa = {
           _id: objEmpresa._id,
           nome: objEmpresa.nomeFantasia,
-        }
+        };
       }
     }
     delete obj.ownerId;
 
     if (vaga.habilidades) {
-      obj.habilidades = vaga.habilidades.map((habilidade) => {
-        const objHabilidade = objHabilidades.find(x => x._id === habilidade);
-        if (objHabilidade) {
-          return {
-            _id: objHabilidade._id,
-            nome: objHabilidade.nome,
+      obj.habilidades = vaga.habilidades
+        .map((habilidade) => {
+          const objHabilidade = objHabilidades.find(
+            (x) => x._id === habilidade
+          );
+          if (objHabilidade) {
+            return {
+              _id: objHabilidade._id,
+              nome: objHabilidade.nome,
+            };
           }
-        }
-      }).filter(x => x)
+        })
+        .filter((x) => x);
     }
     if (vaga.qualificacoes) {
-      obj.qualificacoes = vaga.qualificacoes.map((qualificacao) => {
-        const objQualificacao = objQualificacoes.find(x => x._id === qualificacao);
-        if (objQualificacao) {
-          return {
-            _id: objQualificacao._id,
-            nome: objQualificacao.nome,
+      obj.qualificacoes = vaga.qualificacoes
+        .map((qualificacao) => {
+          const objQualificacao = objQualificacoes.find(
+            (x) => x._id === qualificacao
+          );
+          if (objQualificacao) {
+            return {
+              _id: objQualificacao._id,
+              nome: objQualificacao.nome,
+            };
           }
-        }
-      }).filter(x => x)
+        })
+        .filter((x) => x);
     }
 
     return obj;
