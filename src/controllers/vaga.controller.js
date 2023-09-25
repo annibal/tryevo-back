@@ -46,21 +46,21 @@ const getVagaMatch = (vaga, candidato) => {
 
   // Words
   const v_w = (vaga.descUnique == null ? getMatchWords(vaga.descricao || "") : vaga.descUnique).split(' ');
-  const c_w = (vaga.resumoUnique == null ? getMatchWords(candidato.resumo || "") : vaga.resumoUnique).split(' ');
+  const c_w = (vaga.resumoUnique == null ? getMatchWords(candidato?.resumo || "") : vaga.resumoUnique).split(' ');
   // const all_w = Array.from(new Set([...v_w, ...c_w]));
   const common_w = c_w.filter(w => v_w.includes(w));
   const match_w = common_w.length / v_w.length;
 
   // Habilidades
   const v_h = mapFilterVagaMatch(vaga.habilidades)
-  const c_h = mapFilterVagaMatch(candidato.habilidades);
+  const c_h = mapFilterVagaMatch(candidato?.habilidades);
   // const all_h = Array.from(new Set([...v_h, ...c_h]));
   const common_h = c_h.filter(h => v_h.includes(h));
   const match_h = common_h.length / v_h.length;
 
   // Qualificacoes
   const v_q = mapFilterVagaMatch(vaga.qualificacoes);
-  const allQualif = candidato.experienciasProfissionais.map(x => mapFilterVagaMatch(x?.qualificacoes))
+  const allQualif = (candidato?.experienciasProfissionais || []).map(x => mapFilterVagaMatch(x?.qualificacoes))
   const c_q = Array.from(new Set(allQualif.flat()));
   // const all_q = Array.from(new Set([...v_q, ...c_q]));
   const common_q = c_q.filter(q => v_q.includes(q));
