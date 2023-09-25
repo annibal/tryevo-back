@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 
-const guard = require("../helpers/guard");
+const { guard, withUsuario } = require("../helpers/guard");
 const routeWrapper = require("../helpers/routeWrapper");
 
 const enums = require("../schemas/enums");
@@ -174,9 +174,9 @@ app.delete(
 // Vagas
 // =====================
 
-app.get("/vagas", routeWrapper(vagaController.list));
+app.get("/vagas", withUsuario, routeWrapper(vagaController.list));
 app.get("/vagas-salvas", guard([]), routeWrapper(vagaController.listSalvadas));
-app.get("/vaga/:id", routeWrapper(vagaController.show));
+app.get("/vaga/:id", withUsuario, routeWrapper(vagaController.show));
 app.get(
   "/minhas-vagas",
   guard([

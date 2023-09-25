@@ -43,6 +43,7 @@ const QualificacaoSchema = require("../schemas/qualificacao.schema");
 const VagaSchema = require("../schemas/vaga.schema");
 const validateDocumento = require("../helpers/validateDocumento");
 const parseDMYdate = require("../helpers/parseDMYdate");
+const getMatchWords = require("../helpers/getMatchWords");
 
 const PFModel = mongoose.model("PF", PFSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
@@ -138,7 +139,10 @@ exports.postPF = async (req, res) => {
   if (req.body.nomePrimeiro) data.nomePrimeiro = req.body.nomePrimeiro;
   if (req.body.nomeUltimo) data.nomeUltimo = req.body.nomeUltimo;
   if (req.body.nomePreferido) data.nomePreferido = req.body.nomePreferido;
-  if (req.body.resumo) data.resumo = req.body.resumo;
+  if (req.body.resumo) {
+    data.resumo = req.body.resumo;
+    data.resumoUnique = getMatchWords(req.body.resumo);
+  }
   if (req.body.nacionalidade) data.nacionalidade = req.body.nacionalidade;
   if (req.body.nascimento) data.nascimento = parseDMYdate(req.body.nascimento);
   if (req.body.pcd) data.pcd = !!req.body.pcd;

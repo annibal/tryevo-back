@@ -26,6 +26,7 @@ const PFSchema = require("../schemas/pf.schema");
 const CBOSchema = require("../schemas/cbo.schema");
 const HabilidadeSchema = require("../schemas/habilidade.schema");
 const QualificacaoSchema = require("../schemas/qualificacao.schema");
+const getMatchWords = require("../helpers/getMatchWords");
 
 const VagaModel = mongoose.model("Vaga", VagaSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
@@ -34,6 +35,88 @@ const CBOModel = mongoose.model("CBO", CBOSchema);
 const HabilidadeModel = mongoose.model("Habilidade", HabilidadeSchema);
 const QualificacaoModel = mongoose.model("Qualificacao", QualificacaoSchema);
 
+
+const mapFilterVagaMatch = (arr) => (arr || []).map(x => {
+  if (typeof x === "object" && x?._id != null) return x._id;
+  if (typeof x === "string") return x;
+  return null;
+}).filter(x => x);
+
+const getVagaMatch = (vaga, candidato) => {
+
+  // Words
+  const v_w = (vaga.descUnique == null ? getMatchWords(vaga.descricao || "") : vaga.descUnique).split(' ');
+  const c_w = (vaga.resumoUnique == null ? getMatchWords(candidato.resumo || "") : vaga.resumoUnique).split(' ');
+  // const all_w = Array.from(new Set([...v_w, ...c_w]));
+  const common_w = c_w.filter(w => v_w.includes(w));
+  const match_w = common_w.length / v_w.length;
+
+  // Habilidades
+  const v_h = mapFilterVagaMatch(vaga.habilidades)
+  const c_h = mapFilterVagaMatch(candidato.habilidades);
+  // const all_h = Array.from(new Set([...v_h, ...c_h]));
+  const common_h = c_h.filter(h => v_h.includes(h));
+  const match_h = common_h.length / v_h.length;
+
+  // Qualificacoes
+  const v_q = mapFilterVagaMatch(vaga.qualificacoes);
+  const allQualif = candidato.experienciasProfissionais.map(x => mapFilterVagaMatch(x?.qualificacoes))
+  const c_q = Array.from(new Set(allQualif.flat()));
+  // const all_q = Array.from(new Set([...v_q, ...c_q]));
+  const common_q = c_q.filter(q => v_q.includes(q));
+  const match_q = common_q.length / v_q.length;
+
+  let match = 0;
+  let matchBase = 0;
+
+  if (v_w.length > 0) {
+    match += match_w * 1;
+    matchBase += 1;
+  }
+  if (v_h.length > 0) {
+    match += match_h * 3;
+    matchBase += 3;
+  }
+  if (v_q.length > 0) {
+    match += match_q * 2;
+    matchBase += 2;
+  }
+
+  if (matchBase === 0) {
+    match = null;
+  } else {
+    match = match / matchBase
+  }
+
+  return {
+    match,
+    matchDesc: {
+      palavras: {
+        vaga: v_w.length,
+        candidato: c_w.length,
+        comuns: common_w.length,
+        base: 1,
+        match: match_w,
+      },
+      habilidades: {
+        vaga: v_h.length,
+        candidato: c_h.length,
+        comuns: common_h.length,
+        base: 3,
+        match: match_h,
+      },
+      qualificacoes: {
+        vaga: v_q.length,
+        candidato: c_q.length,
+        comuns: common_q.length,
+        base: 2,
+        match: match_q,
+      },
+    }
+  }
+}
+
+
 exports.save = async (req, res) => {
   const data = {};
 
@@ -41,7 +124,11 @@ exports.save = async (req, res) => {
 
   if (req.body.titulo) data.titulo = req.body.titulo;
   if (req.body.apelido) data.apelido = req.body.apelido;
-  if (req.body.descricao) data.descricao = req.body.descricao;
+  if (req.body.descricao) {
+    data.descricao = req.body.descricao;
+    data.descUnique = getMatchWords(req.body.descricao);
+  }
+
   if (req.body.experiencia) data.experiencia = req.body.experiencia;
 
   if (
@@ -243,6 +330,19 @@ exports.show = async (req, res) => {
   const id = req.params.id;
   let vaga = await VagaModel.findById(id).lean();
   if (!vaga) throw new Error("Vaga não encontrada");
+  
+  // Update vagas that didn't have descUnique
+  if (!vaga.descUnique && vaga.descricao) {
+    try {
+      vaga.descUnique = getMatchWords(vaga.descricao);
+      await VagaModel.findByIdAndUpdate(req.params.id, vaga, {
+        new: true,
+        runValidators: true,
+      });
+  
+      vaga = await VagaModel.findById(id).lean();
+    } catch (e) {}
+  }
 
   if (vaga.cargo) {
     const cargoObj = await CBOModel.findById(vaga.cargo).lean();
@@ -263,6 +363,13 @@ exports.show = async (req, res) => {
       ).lean();
       vaga.habilidades[i] = habilidadesObj;
     }
+  }
+
+  if (req.usuario) {
+    const candidato = await PFModel.findById(req.usuario._id).lean();
+    const matchObj = getVagaMatch(vaga, candidato)
+    vaga.match = matchObj.match;
+    vaga.matchDesc = matchObj.matchDesc;
   }
 
   if (!vaga.ocultarEmpresa) {
@@ -373,11 +480,24 @@ exports.listSalvadas = async (req, res) => {
 };
 
 exports.list = async (req, res) => {
-  const { from = 0, to = 30, q, sort = "createdAt", salvadas } = req.query;
-
+  const { from = 0, to = 30, q, sort = "createdAt" } = req.query;
+  
   let search = { active: true };
+
   if (q) search.titulo = { $regex: q, $options: "i" };
-  if (salvadas) search._id = { $in: salvadas };
+  if (req.query.descricao) { search.descricao = { $regex: req.query.descricao, $options: "i" }; }
+  if (req.query.ownerId) { search.ownerId = req.query.ownerId; }
+  if (req.query.tipoContrato && tiposContrato.includes(req.query.tipoContrato)) { search.tipoContrato = req.query.tipoContrato; }
+  if (req.query.modeloContrato && tiposModeloContrato.includes(req.query.modeloContrato)) { search.modeloContrato = req.query.modeloContrato; }
+  if (req.query.jornada && tiposJornada.includes(req.query.jornada)) { search.jornada = req.query.jornada; }
+  if (req.query.salarioMinimo && !isNaN(+req.query.salarioMinimo)) { search.salarioMinimo = { $gte: +req.query.salarioMinimo }; }
+  if (req.query.salarioMaximo && !isNaN(+req.query.salarioMaximo)) { search.salarioMaximo = { $lte: +req.query.salarioMaximo }; }
+  if (req.query.idadeMinima && !isNaN(+req.query.idadeMinima)) { search.idadeMinima = { $gte: +req.query.idadeMinima }; }
+  if (req.query.idadeMaxima && !isNaN(+req.query.idadeMaxima)) { search.idadeMaxima = { $lte: +req.query.idadeMaxima }; }
+  if (req.query.habilidades) { search.habilidades = { $in: req.query.habilidades.split(',').map(x => x.trim()) }; }
+  if (req.query.qualificacoes) { search.qualificacoes = { $in: req.query.qualificacoes.split(',').map(x => x.trim()) }; }
+
+  // if (salvadas) search._id = { $in: salvadas };
 
   const select = [
     "_id",

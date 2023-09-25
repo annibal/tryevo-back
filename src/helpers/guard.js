@@ -12,6 +12,24 @@ const getToken = (req) => {
   return str;
 };
 
+const withUsuario = (req, res, next) => {
+  const token = getToken(req);
+  if (token) {
+    jwt.verify(token, config.jwtSecret, (error, decodedToken) => {
+      if (!error) {
+        req.usuario = {
+          _id: decodedToken._id,
+          email: decodedToken.email,
+          plano: decodedToken.plano,
+          createdAt: decodedToken.createdAt,
+          updatedAt: decodedToken.updatedAt,
+        };
+      }
+    });
+  }
+  next();
+};
+
 const guard =
   (planos = []) =>
   (req, res, next) => {
@@ -48,4 +66,7 @@ const guard =
     }
   };
 
-module.exports = guard;
+module.exports = {
+  guard,
+  withUsuario,
+};
