@@ -263,7 +263,7 @@ app.post(
   routeWrapper(propostaController.create)
 );
 app.delete(
-  "/candidaturas",
+  "/candidatura/:id",
   guard([
     USUARIO_PLANOS.PF_FREE,
     USUARIO_PLANOS.PF_SMART,

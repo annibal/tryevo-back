@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
 const id6 = require("../helpers/id6");
-const { listMine } = require("./vaga.controller");
+const vagaController = require("./vaga.controller");
+const authController = require("./auth.controller");
 
 const PropostaSchema = require("../schemas/proposta.schema");
 const VagaSchema = require("../schemas/vaga.schema");
-const { allUsers } = require("./auth.controller");
 
 const PropostaModel = mongoose.model("Proposta", PropostaSchema);
 const VagaModel = mongoose.model("Vaga", VagaSchema);
@@ -55,11 +55,11 @@ exports.verDados = async (req, res) => {
       to: 1,
     },
   };
-  const objCandidatos = await allUsers(reqX, res)
-  const candidato = objCandidatos?.data?.[0]
+  const objCandidatos = await authController.allUsers(reqX, res);
+  const candidato = objCandidatos?.data?.[0];
 
   if (!candidato) throw new Error("Dados do candidato não encontrado");
-  
+
   proposta = await PropostaModel.findByIdAndUpdate(
     id,
     { ...proposta, viuDados: true },
@@ -110,7 +110,28 @@ exports.listPF = async (req, res) => {
   const search = { candidatoId: req.usuario._id };
 
   const total = await PropostaModel.countDocuments(search);
-  const data = await PropostaModel.find(search).sort({ createdAt: -1 }).exec();
+  const propostas = await PropostaModel.find(search)
+    .lean()
+    .sort({ createdAt: -1 })
+    .exec();
+
+  const vagaIds = Array.from(new Set(propostas.map((x) => x.vagaId)));
+  const vagasResponse = await vagaController.list({
+    ...req,
+    query: {
+      id: vagaIds.join(","),
+      from: 0,
+      to: 999999,
+    },
+  });
+
+  const vagas = vagasResponse?.data || [];
+  console.log("\n\n\n\n", vagaIds, vagasResponse.meta, "\n\n\n\n");
+
+  const data = (propostas || []).map((proposta) => ({
+    ...proposta,
+    vaga: vagas.find((v) => v._id === proposta.vagaId),
+  }));
 
   return {
     data,
@@ -122,17 +143,21 @@ exports.listPF = async (req, res) => {
 };
 
 exports.listPJ = async (req, res) => {
-  const myVagasResponse = await listMine(req, res);
+  const myVagasResponse = await vagaController.listMine(req, res);
   const myVagas = myVagasResponse?.data || [];
   const myVagaIds = myVagas.map((x) => x._id);
   const search = { _id: { $in: myVagaIds } };
 
   const total = await PropostaModel.countDocuments(search);
-  let data = await PropostaModel.find(search).sort({ createdAt: -1 }).exec();
+  const propostas = await PropostaModel.find(search)
+    .lean()
+    .sort({ createdAt: -1 })
+    .exec();
 
-  (data || []).forEach(
-    (x) => (x.vaga = myVagas.find((v) => v._id === x.vagaId))
-  );
+  const data = (propostas || []).map((proposta) => ({
+    ...proposta,
+    vaga: myVagas.find((v) => v._id === proposta.vagaId),
+  }));
 
   return {
     data,

@@ -493,6 +493,8 @@ exports.list = async (req, res) => {
   if (req.query.habilidades) { search.habilidades = { $in: req.query.habilidades.split(',').map(x => x.trim()) }; }
   if (req.query.qualificacoes) { search.qualificacoes = { $in: req.query.qualificacoes.split(',').map(x => x.trim()) }; }
   if (req.query.id) search._id = { $in: req.query.id.split(',').map(x => x.trim()) };
+  
+  // console.log("\n\n\n\n", {search}, "\n\n\n\n")
 
   const select = [
     "_id",
