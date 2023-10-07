@@ -170,7 +170,7 @@ exports.getSingleUser = async (req, res) => {
 }
 
 exports.allUsers = async (req, res) => {
-  const { from = 0, to = 30, q, planos, id } = req.query;
+  const { from = 0, to = 30, q, planos, ids } = req.query;
 
   let search = {};
   if (q) {
@@ -178,6 +178,9 @@ exports.allUsers = async (req, res) => {
   }
   if (planos) {
     search.plano = { $in: planos.split(',') };
+  }
+  if (ids) {
+    search._id = { $in: ids.split(',').map(x => x.trim()) };
   }
 
   const total = await UsuarioModel.countDocuments(search);

@@ -12,6 +12,7 @@ const vagaController = require("../controllers/vaga.controller");
 const cboController = require("../controllers/cbo.controller");
 const habilidadeController = require("../controllers/habilidade.controller");
 const qualificacaoController = require("../controllers/qualificacao.controller");
+const propostaController = require("../controllers/proposta.controller");
 
 // =====================
 // Healthcheck
@@ -88,10 +89,18 @@ app.post(
 // =====================
 
 app.get("/info/self", guard(), routeWrapper(infoController.getSelf));
-app.get("/info/other/:id", guard([USUARIO_PLANOS.MASTER_ADMIN]), routeWrapper(infoController.getById));
+app.get(
+  "/info/other/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(infoController.getById)
+);
 app.post("/info/pf", guard(), routeWrapper(infoController.postPF));
 app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
-app.post("/info/salvar-vaga/:id", guard(), routeWrapper(infoController.setVagaSalva));
+app.post(
+  "/info/salvar-vaga/:id",
+  guard(),
+  routeWrapper(infoController.setVagaSalva)
+);
 
 // =====================
 // CBO - Cadastro Brasileiro de Ocupações
@@ -99,7 +108,11 @@ app.post("/info/salvar-vaga/:id", guard(), routeWrapper(infoController.setVagaSa
 
 app.get("/cbo", routeWrapper(cboController.list));
 app.post("/cbo", guard(), routeWrapper(cboController.create));
-app.post("/cbo/:id", guard([USUARIO_PLANOS.MASTER_ADMIN]), routeWrapper(cboController.edit));
+app.post(
+  "/cbo/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(cboController.edit)
+);
 app.get(
   "/cbo/validate/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
@@ -127,7 +140,11 @@ app.post(
 
 app.get("/habilidade", routeWrapper(habilidadeController.list));
 app.post("/habilidade", guard(), routeWrapper(habilidadeController.create));
-app.post("/habilidade/:id", guard([USUARIO_PLANOS.MASTER_ADMIN]), routeWrapper(habilidadeController.edit));
+app.post(
+  "/habilidade/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(habilidadeController.edit)
+);
 app.delete(
   "/habilidade/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
@@ -144,11 +161,7 @@ app.post(
 // =====================
 
 app.get("/qualificacao", routeWrapper(qualificacaoController.list));
-app.post(
-  "/qualificacao",
-  guard(),
-  routeWrapper(qualificacaoController.create)
-);
+app.post("/qualificacao", guard(), routeWrapper(qualificacaoController.create));
 app.post(
   "/qualificacao/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
@@ -216,6 +229,88 @@ app.delete(
     USUARIO_PLANOS.PJ_ENTERPRISE,
   ]),
   routeWrapper(vagaController.delete)
+);
+
+// =====================
+// Propostas / Candidaturas
+// =====================
+
+app.get(
+  "/candidaturas",
+  guard([
+    USUARIO_PLANOS.PF_FREE,
+    USUARIO_PLANOS.PF_SMART,
+    USUARIO_PLANOS.PF_PREMIUM,
+  ]),
+  routeWrapper(propostaController.listPF)
+);
+app.get(
+  "/candidatura/:id",
+  guard([
+    USUARIO_PLANOS.PF_FREE,
+    USUARIO_PLANOS.PF_SMART,
+    USUARIO_PLANOS.PF_PREMIUM,
+  ]),
+  routeWrapper(propostaController.show)
+);
+app.post(
+  "/candidaturas",
+  guard([
+    USUARIO_PLANOS.PF_FREE,
+    USUARIO_PLANOS.PF_SMART,
+    USUARIO_PLANOS.PF_PREMIUM,
+  ]),
+  routeWrapper(propostaController.create)
+);
+app.delete(
+  "/candidaturas",
+  guard([
+    USUARIO_PLANOS.PF_FREE,
+    USUARIO_PLANOS.PF_SMART,
+    USUARIO_PLANOS.PF_PREMIUM,
+  ]),
+  routeWrapper(propostaController.delete)
+);
+//
+app.get(
+  "/propostas",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(propostaController.listPJ)
+);
+app.get(
+  "/proposta/:id",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(propostaController.show)
+);
+app.post(
+  "/proposta/:id/ver-candidato",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(propostaController.verDados)
+);
+app.post(
+  "/proposta/:id/set-contratado",
+  guard([
+    USUARIO_PLANOS.PJ_FREE,
+    USUARIO_PLANOS.PJ_PREMIUM,
+    USUARIO_PLANOS.PJ_SMART,
+    USUARIO_PLANOS.PJ_ENTERPRISE,
+  ]),
+  routeWrapper(propostaController.setContratado)
 );
 
 // =====================

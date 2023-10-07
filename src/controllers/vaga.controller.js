@@ -383,8 +383,6 @@ exports.show = async (req, res) => {
     };
   }
 
-  //TODO: propostas
-
   return vaga;
 };
 
@@ -406,8 +404,6 @@ exports.listMine = async (req, res) => {
     "tipoContrato",
     "qualificacoes",
   ];
-
-  //TODO: propostas
 
   const total = await VagaModel.countDocuments(search);
   let data = await VagaModel.find(search, select.join(" "))
@@ -472,7 +468,7 @@ exports.listSalvadas = async (req, res) => {
     ...req,
     query: {
       ...req.query,
-      salvadas: pfObj.vagasSalvas || [],
+      id: (pfObj.vagasSalvas || []).join(',') + ',',
     },
   };
 
@@ -496,8 +492,7 @@ exports.list = async (req, res) => {
   if (req.query.idadeMaxima && !isNaN(+req.query.idadeMaxima)) { search.idadeMaxima = { $lte: +req.query.idadeMaxima }; }
   if (req.query.habilidades) { search.habilidades = { $in: req.query.habilidades.split(',').map(x => x.trim()) }; }
   if (req.query.qualificacoes) { search.qualificacoes = { $in: req.query.qualificacoes.split(',').map(x => x.trim()) }; }
-
-  // if (salvadas) search._id = { $in: salvadas };
+  if (req.query.id) search._id = { $in: req.query.id.split(',').map(x => x.trim()) };
 
   const select = [
     "_id",
