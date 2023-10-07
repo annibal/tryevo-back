@@ -5,9 +5,11 @@ const authController = require("./auth.controller");
 
 const PropostaSchema = require("../schemas/proposta.schema");
 const VagaSchema = require("../schemas/vaga.schema");
+const PFSchema = require("../schemas/pf.schema");
 
 const PropostaModel = mongoose.model("Proposta", PropostaSchema);
 const VagaModel = mongoose.model("Vaga", VagaSchema);
+const PFModel = mongoose.model("PF", PFSchema);
 
 exports.create = async (req, res) => {
   const data = {
@@ -126,7 +128,7 @@ exports.listPF = async (req, res) => {
   });
 
   const vagas = vagasResponse?.data || [];
-  console.log("\n\n\n\n", vagaIds, vagasResponse.meta, "\n\n\n\n");
+  // console.log("\n\n\n\n", vagaIds, vagasResponse.meta, "\n\n\n\n");
 
   const data = (propostas || []).map((proposta) => ({
     ...proposta,
@@ -146,18 +148,37 @@ exports.listPJ = async (req, res) => {
   const myVagasResponse = await vagaController.listMine(req, res);
   const myVagas = myVagasResponse?.data || [];
   const myVagaIds = myVagas.map((x) => x._id);
-  const search = { _id: { $in: myVagaIds } };
+  const search = { vagaId: { $in: myVagaIds } };
+
+  // console.log("\n\n\n\n", myVagaIds, myVagasResponse.meta, "\n\n\n\n");
 
   const total = await PropostaModel.countDocuments(search);
   const propostas = await PropostaModel.find(search)
     .lean()
     .sort({ createdAt: -1 })
     .exec();
+  
+  const candidatoIds = Array.from(new Set(propostas.map((x) => x.candidatoId)));
+  const objCandidatos = await PFModel.find({ _id: { '$in': candidatoIds } });
+  const candidatos = objCandidatos || [];
 
-  const data = (propostas || []).map((proposta) => ({
-    ...proposta,
-    vaga: myVagas.find((v) => v._id === proposta.vagaId),
-  }));
+  console.log("\n\n\n\n", candidatoIds, objCandidatos.length, "\n\n\n\n");
+
+  const data = (propostas || []).map((proposta) => {
+    const pf = candidatos.find((v) => v._id === proposta.candidatoId);
+
+    return {
+      ...proposta,
+      vaga: myVagas.find((v) => v._id === proposta.vagaId),
+      candidato: {
+        genero: pf?.genero,
+        nomePreferido: pf?.nomePreferido,
+        nomePrimeiro: pf?.nomePrimeiro,
+        nomeUltimo: pf?.nomeUltimo,
+        nascimento: pf?.nascimento,
+      },
+    }
+  });
 
   return {
     data,
