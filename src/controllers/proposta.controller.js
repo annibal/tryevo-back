@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const id6 = require("../helpers/id6");
 const vagaController = require("./vaga.controller");
+const infoController = require("./info.controller");
 const authController = require("./auth.controller");
 
 const PropostaSchema = require("../schemas/proposta.schema");
@@ -49,18 +50,17 @@ exports.verDados = async (req, res) => {
   let proposta = await PropostaModel.findById(id).lean();
   if (!proposta) throw new Error("Proposta não encontrada");
 
-  const reqX = {
+  const candidato = await infoController.showPF({
     ...req,
-    query: {
-      id: proposta.candidatoId,
-      from: 0,
-      to: 1,
-    },
-  };
-  const objCandidatos = await authController.allUsers(reqX, res);
-  const candidato = objCandidatos?.data?.[0];
+    params: { id: proposta.candidatoId },
+  });
+  if (!candidato) throw new Error("Dados do candidato não encontrados");
 
-  if (!candidato) throw new Error("Dados do candidato não encontrado");
+  const usuario = await authController.getSingleUser({
+    ...req,
+    params: { id: proposta.candidatoId },
+  })
+  candidato.email = (usuario || {}).email;
 
   proposta = await PropostaModel.findByIdAndUpdate(
     id,
@@ -104,7 +104,65 @@ exports.delete = async (req, res) => {
 exports.show = async (req, res) => {
   const id = req.params.id;
   let proposta = await PropostaModel.findById(id).lean();
+
   if (!proposta) throw new Error("Proposta não encontrada");
+  const vaga = await vagaController.show({
+    ...req,
+    params: { id: proposta.vagaId },
+  });
+  proposta.vaga = vaga;
+
+  return proposta;
+};
+
+exports.showPJ = async (req, res) => {
+  const id = req.params.id;
+  let proposta = await PropostaModel.findById(id).lean();
+  if (!proposta) throw new Error("Proposta não encontrada");
+
+  const vaga = await vagaController.show({
+    ...req,
+    params: { id: proposta.vagaId },
+  });
+  proposta.vaga = vaga;
+
+  // console.log("\n\n\n\n", proposta.vagaId, vaga, "\n\n\n\n");
+
+  const candidatoObj = await infoController.showPF({
+    ...req,
+    params: { id: proposta.candidatoId },
+  });
+  const candidato = candidatoObj || {};
+
+  // console.log("\n\n\n\n", proposta.candidatoId, candidato, "\n\n\n\n");
+  
+  proposta.matchResult = vagaController.getVagaMatch(vaga, candidato);
+
+  if (proposta.viuDados) {
+    const usuario = await authController.getSingleUser({
+      ...req,
+      params: { id: proposta.candidatoId },
+    })
+    candidato.email = (usuario || {}).email;
+
+    proposta.candidato = candidato
+  } else {
+    proposta.candidato = {
+      nomePrimeiro: candidato.nomePrimeiro,
+      nomeUltimo: candidato.nomeUltimo,
+      nomePreferido: candidato.nomePreferido,
+      genero: candidato.genero,
+      nascimento: candidato.nascimento,
+      pcd: candidato.pcd,
+      habilidades: candidato.habilidades,
+      objetivos: candidato.objetivos,
+      projetosPessoais: candidato.projetosPessoais,
+      escolaridades: candidato.escolaridades,
+      experienciasProfissionais: candidato.experienciasProfissionais,
+      cursos: candidato.cursos,
+    };
+  }
+
   return proposta;
 };
 
@@ -145,8 +203,15 @@ exports.listPF = async (req, res) => {
 };
 
 exports.listPJ = async (req, res) => {
+  const qVaga = req.query?.vaga;
+
   const myVagasResponse = await vagaController.listMine(req, res);
-  const myVagas = myVagasResponse?.data || [];
+  let myVagas = myVagasResponse?.data || [];
+  
+  if (qVaga != null && qVaga.length > 0) {
+    myVagas = myVagas.filter(x => x._id === qVaga)
+  }
+
   const myVagaIds = myVagas.map((x) => x._id);
   const search = { vagaId: { $in: myVagaIds } };
 
@@ -157,19 +222,21 @@ exports.listPJ = async (req, res) => {
     .lean()
     .sort({ createdAt: -1 })
     .exec();
-  
+
   const candidatoIds = Array.from(new Set(propostas.map((x) => x.candidatoId)));
-  const objCandidatos = await PFModel.find({ _id: { '$in': candidatoIds } });
+  const objCandidatos = await PFModel.find({ _id: { $in: candidatoIds } });
   const candidatos = objCandidatos || [];
 
-  console.log("\n\n\n\n", candidatoIds, objCandidatos.length, "\n\n\n\n");
+  // console.log("\n\n\n\n", candidatoIds, objCandidatos.length, "\n\n\n\n");
 
   const data = (propostas || []).map((proposta) => {
     const pf = candidatos.find((v) => v._id === proposta.candidatoId);
-
+    const vaga = myVagas.find((v) => v._id === proposta.vagaId)
+    const matchResult = vagaController.getVagaMatch(vaga, pf);
     return {
       ...proposta,
-      vaga: myVagas.find((v) => v._id === proposta.vagaId),
+      vaga,
+      matchResult,
       candidato: {
         genero: pf?.genero,
         nomePreferido: pf?.nomePreferido,
@@ -177,7 +244,7 @@ exports.listPJ = async (req, res) => {
         nomeUltimo: pf?.nomeUltimo,
         nascimento: pf?.nascimento,
       },
-    }
+    };
   });
 
   return {

@@ -115,6 +115,7 @@ const getVagaMatch = (vaga, candidato) => {
     }
   }
 }
+exports.getVagaMatch = getVagaMatch
 
 
 exports.save = async (req, res) => {

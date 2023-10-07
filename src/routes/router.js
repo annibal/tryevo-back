@@ -290,7 +290,7 @@ app.get(
     USUARIO_PLANOS.PJ_SMART,
     USUARIO_PLANOS.PJ_ENTERPRISE,
   ]),
-  routeWrapper(propostaController.show)
+  routeWrapper(propostaController.showPJ)
 );
 app.post(
   "/proposta/:id/ver-candidato",
