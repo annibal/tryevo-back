@@ -59,7 +59,7 @@ exports.verDados = async (req, res) => {
   const usuario = await authController.getSingleUser({
     ...req,
     params: { id: proposta.candidatoId },
-  })
+  });
   candidato.email = (usuario || {}).email;
 
   proposta = await PropostaModel.findByIdAndUpdate(
@@ -77,6 +77,13 @@ exports.setContratado = async (req, res) => {
   let proposta = await PropostaModel.findById(id).lean();
   if (!proposta) throw new Error("Proposta não encontrada");
 
+  const vaga = await VagaModel.findById(proposta.vagaId).lean();
+  if (!vaga) throw new Error("Vaga não existe");
+  if (vaga.contratou === id) throw new Error("Proposta já contratada");
+  if (vaga.contratou != null && vaga.contratou !== id)
+    throw new Error("Vaga já foi preenchida por outro candidato");
+  if (vaga.active === false) throw new Error("Vaga inativa não pode contratar");
+
   proposta = await PropostaModel.findByIdAndUpdate(
     id,
     { ...proposta, contratou: true },
@@ -84,7 +91,17 @@ exports.setContratado = async (req, res) => {
   );
   if (!proposta) throw new Error("Erro ao registrar proposta como contratada");
 
-  // TODO: Update Vaga
+  await VagaModel.findByIdAndUpdate(
+    proposta.vagaId,
+    {
+      contratou: proposta.candidatoId,
+      active: false,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
 
   return proposta;
 };
@@ -93,6 +110,8 @@ exports.delete = async (req, res) => {
   const id = req.params.id;
   const proposta = await PropostaModel.findById(id);
   if (!proposta) throw new Error("Proposta não encontrada");
+
+  if (proposta.contratou) throw new Error("Erro ao excluir proposta que já foi contratada");
 
   await PropostaModel.findByIdAndDelete(id);
   return {
@@ -135,17 +154,17 @@ exports.showPJ = async (req, res) => {
   const candidato = candidatoObj || {};
 
   // console.log("\n\n\n\n", proposta.candidatoId, candidato, "\n\n\n\n");
-  
+
   proposta.matchResult = vagaController.getVagaMatch(vaga, candidato);
 
   if (proposta.viuDados) {
     const usuario = await authController.getSingleUser({
       ...req,
       params: { id: proposta.candidatoId },
-    })
+    });
     candidato.email = (usuario || {}).email;
 
-    proposta.candidato = candidato
+    proposta.candidato = candidato;
   } else {
     proposta.candidato = {
       nomePrimeiro: candidato.nomePrimeiro,
@@ -182,6 +201,7 @@ exports.listPF = async (req, res) => {
       id: vagaIds.join(","),
       from: 0,
       to: 999999,
+      showAll: true,
     },
   });
 
@@ -207,9 +227,9 @@ exports.listPJ = async (req, res) => {
 
   const myVagasResponse = await vagaController.listMine(req, res);
   let myVagas = myVagasResponse?.data || [];
-  
+
   if (qVaga != null && qVaga.length > 0) {
-    myVagas = myVagas.filter(x => x._id === qVaga)
+    myVagas = myVagas.filter((x) => x._id === qVaga);
   }
 
   const myVagaIds = myVagas.map((x) => x._id);
@@ -231,7 +251,7 @@ exports.listPJ = async (req, res) => {
 
   const data = (propostas || []).map((proposta) => {
     const pf = candidatos.find((v) => v._id === proposta.candidatoId);
-    const vaga = myVagas.find((v) => v._id === proposta.vagaId)
+    const vaga = myVagas.find((v) => v._id === proposta.vagaId);
     const matchResult = vagaController.getVagaMatch(vaga, pf);
     return {
       ...proposta,

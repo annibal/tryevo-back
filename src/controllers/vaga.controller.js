@@ -301,6 +301,9 @@ exports.save = async (req, res) => {
       throw new Error("Acesso negado ao alterar vaga criada por outrém");
     // throw new Error(`Acesso negado ao alterar vaga criada por outrém - vaga.ownerId: ${vaga.ownerId}, usuario._id: ${req.usuario._id}`);
 
+    if (vaga.contratou)
+      throw new Error("Não é permitido fazer alterações em uma vaga que já contratou um candidato");
+
     return await VagaModel.findByIdAndUpdate(req.params.id, data, {
       new: true,
       runValidators: true,
@@ -320,6 +323,8 @@ exports.delete = async (req, res) => {
 
   if (vaga.ownerId !== req.usuario._id)
     throw new Error("Acesso negado ao deletar vaga criada por outrém");
+  if (vaga.contratou)
+    throw new Error("Não é permitido deletar vaga que já contratou um candidato");
   await VagaModel.findByIdAndDelete(id);
   return {
     vaga: vaga,
@@ -479,8 +484,9 @@ exports.listSalvadas = async (req, res) => {
 exports.list = async (req, res) => {
   const { from = 0, to = 30, q, sort = "createdAt" } = req.query;
   
-  let search = { active: true };
-
+  let search = {};
+  
+  if (!req.query.showAll) search.active = true;
   if (q) search.titulo = { $regex: q, $options: "i" };
   if (req.query.descricao) { search.descricao = { $regex: req.query.descricao, $options: "i" }; }
   if (req.query.ownerId) { search.ownerId = req.query.ownerId; }

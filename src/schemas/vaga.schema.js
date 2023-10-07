@@ -13,6 +13,7 @@ const VagaQuestaoSchema = require("./vaga-questao.schema");
 
 const VagaSchema = SchemaFactory({
   active: { type: Boolean },
+  contratou: { type: String },
   titulo: { type: String, required: true },
   descricao: { type: String, required: true },
   apelido: { type: String },
