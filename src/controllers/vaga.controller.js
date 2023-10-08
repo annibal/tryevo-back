@@ -21,6 +21,7 @@ const tiposModeloContrato = Object.values(TIPO_MODELO_CONTRATO);
 const tiposJornada = Object.values(TIPO_JORNADA);
 
 const VagaSchema = require("../schemas/vaga.schema");
+const PropostaSchema = require("../schemas/proposta.schema");
 const PJSchema = require("../schemas/pj.schema");
 const PFSchema = require("../schemas/pf.schema");
 const CBOSchema = require("../schemas/cbo.schema");
@@ -29,6 +30,7 @@ const QualificacaoSchema = require("../schemas/qualificacao.schema");
 const getMatchWords = require("../helpers/getMatchWords");
 
 const VagaModel = mongoose.model("Vaga", VagaSchema);
+const PropostaModel = mongoose.model("Proposta", PropostaSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
 const PFModel = mongoose.model("PF", PFSchema);
 const CBOModel = mongoose.model("CBO", CBOSchema);
@@ -349,6 +351,8 @@ exports.show = async (req, res) => {
       vaga = await VagaModel.findById(id).lean();
     } catch (e) {}
   }
+
+  vaga.propostas = await PropostaModel.find({ vagaId: id });
 
   if (vaga.cargo) {
     const cargoObj = await CBOModel.findById(vaga.cargo).lean();
