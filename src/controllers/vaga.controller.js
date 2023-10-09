@@ -99,6 +99,9 @@ const getVagaMatch = (vaga, candidato) => {
         comuns: common_w.length,
         base: 1,
         match: match_w,
+        v_w,
+        c_w,
+        common_w,
       },
       habilidades: {
         vaga: v_h.length,
@@ -106,6 +109,9 @@ const getVagaMatch = (vaga, candidato) => {
         comuns: common_h.length,
         base: 3,
         match: match_h,
+        v_h,
+        c_h,
+        common_h,
       },
       qualificacoes: {
         vaga: v_q.length,
@@ -113,6 +119,9 @@ const getVagaMatch = (vaga, candidato) => {
         comuns: common_q.length,
         base: 2,
         match: match_q,
+        v_q,
+        c_q,
+        common_q,
       },
     }
   }
@@ -413,6 +422,7 @@ exports.listMine = async (req, res) => {
     "descricao",
     "tipoContrato",
     "qualificacoes",
+    "habilidades",
   ];
 
   const total = await VagaModel.countDocuments(search);
@@ -440,7 +450,6 @@ exports.listMine = async (req, res) => {
       {}
     );
     obj.desc = vaga.descricao.split(" ").slice(0, 30).join(" ").slice(0, 300);
-    delete obj.descricao;
 
     if (vaga.cargo) {
       const objCargo = objCargos.find((x) => x._id === vaga.cargo);
