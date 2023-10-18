@@ -346,6 +346,7 @@ exports.postPF = async (req, res) => {
       req.body.escolaridades.forEach((escolaridade, idx) => {
         const dataEscolaridade = {};
         if (escolaridade.nome) dataEscolaridade.nome = escolaridade.nome;
+        if (escolaridade.nomeCurso) dataEscolaridade.nomeCurso = escolaridade.nomeCurso;
         if (escolaridade.nivel) {
           if (!tiposEscolaridade.includes(escolaridade.nivel))
             throw new Error(
