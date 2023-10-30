@@ -42,6 +42,11 @@ app.post(
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.updatePlano)
 );
+app.post(
+  "/api/auth/change-user-password",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(authController.changeUserPassword)
+);
 app.get(
   "/api/auth/elevate/:masterpass",
   guard([]),

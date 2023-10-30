@@ -160,7 +160,24 @@ exports.changePassword = async (req, res) => {
     { senha: hashSenha },
     { new: true, runValidators: true }
   );
-  if (!usuarioObj) throw new Error("Erro ao atualizar assinatura do usuário");
+  if (!usuarioObj) throw new Error("Erro ao alterar senha");
+  
+  return getAuthResponse(usuarioObj);
+}
+
+exports.changeUserPassword = async (req, res) => {
+  const {id, senha} = req.body;
+  if (!senha) throw new Error("Senha não informada");
+  const usuario = await UsuarioModel.findById(id);
+  if (!usuario) throw new Error("Usuario não encontrado");
+
+  const hashSenha = await encryptPassword(senha);
+  const usuarioObj = await UsuarioModel.findByIdAndUpdate(
+    id,
+    { senha: hashSenha },
+    { new: true, runValidators: true }
+  );
+  if (!usuarioObj) throw new Error("Erro ao alterar senha do usuário");
   
   return getAuthResponse(usuarioObj);
 }
