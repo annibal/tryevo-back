@@ -27,7 +27,7 @@ const PFSchema = SchemaFactory({
   endereco: { type: EnderecoSchema },
 
   pcd: { type: Boolean, default: false },
-  pcdDescrição: { type: String },
+  pcdDescricao: { type: String },
   aceitaTrabalharDistancia: { type: Number, default: 0 },
   aceitaMudarDistancia: { type: Number, default: 0 },
 

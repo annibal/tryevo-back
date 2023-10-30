@@ -26,7 +26,7 @@ app.get(["/", "/api/health"], (req, res) => {
 // Enums
 // =====================
 
-app.get("/enums", (req, res) => {
+app.get("/api/enums", (req, res) => {
   res.send(enums);
 });
 
@@ -34,52 +34,52 @@ app.get("/enums", (req, res) => {
 // Auth
 // =====================
 
-app.post("/auth/login", routeWrapper(authController.login));
-app.post("/auth/register", routeWrapper(authController.register));
-app.delete("/auth/self", guard(), routeWrapper(authController.deleteSelf));
+app.post("/api/auth/login", routeWrapper(authController.login));
+app.post("/api/auth/register", routeWrapper(authController.register));
+app.delete("/api/auth/self", guard(), routeWrapper(authController.deleteSelf));
 app.post(
-  "/auth/update-plano",
+  "/api/auth/update-plano",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.updatePlano)
 );
 app.get(
-  "/auth/elevate/:masterpass",
+  "/api/auth/elevate/:masterpass",
   guard([]),
   routeWrapper(authController.elevate)
 );
 app.post(
-  "/auth/change-password",
+  "/api/auth/change-password",
   guard(),
   routeWrapper(authController.changePassword)
 );
 app.post(
-  "/auth/change-account-type",
+  "/api/auth/change-account-type",
   guard(),
   routeWrapper(authController.changeAccountType)
 );
-app.get("/auth/self", guard(), routeWrapper(authController.getSelf));
+app.get("/api/auth/self", guard(), routeWrapper(authController.getSelf));
 app.get(
-  "/auth/users",
+  "/api/auth/users",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.allUsers)
 );
 app.get(
-  "/auth/user/:id",
+  "/api/auth/user/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(authController.getSingleUser)
 );
 app.post(
-  "/auth/remocao-dados",
+  "/api/auth/remocao-dados",
   guard(),
   routeWrapper(authController.remocaoDados)
 );
 app.post(
-  "/auth/remocao-historico",
+  "/api/auth/remocao-historico",
   guard(),
   routeWrapper(authController.remocaoHistorico)
 );
 app.post(
-  "/auth/remocao-total",
+  "/api/auth/remocao-total",
   guard(),
   routeWrapper(authController.remocaoTotal)
 );
@@ -88,16 +88,16 @@ app.post(
 // Personal Data
 // =====================
 
-app.get("/info/self", guard(), routeWrapper(infoController.getSelf));
+app.get("/api/info/self", guard(), routeWrapper(infoController.getSelf));
 app.get(
-  "/info/other/:id",
+  "/api/info/other/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(infoController.getById)
 );
-app.post("/info/pf", guard(), routeWrapper(infoController.postPF));
-app.post("/info/pj", guard(), routeWrapper(infoController.postPJ));
+app.post("/api/info/pf", guard(), routeWrapper(infoController.postPF));
+app.post("/api/info/pj", guard(), routeWrapper(infoController.postPJ));
 app.post(
-  "/info/salvar-vaga/:id",
+  "/api/info/salvar-vaga/:id",
   guard(),
   routeWrapper(infoController.setVagaSalva)
 );
@@ -106,30 +106,30 @@ app.post(
 // CBO - Cadastro Brasileiro de Ocupações
 // =====================
 
-app.get("/cbo", routeWrapper(cboController.list));
-app.post("/cbo", guard(), routeWrapper(cboController.create));
+app.get("/api/cbo", routeWrapper(cboController.list));
+app.post("/api/cbo", guard(), routeWrapper(cboController.create));
 app.post(
-  "/cbo/:id",
+  "/api/cbo/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(cboController.edit)
 );
 app.get(
-  "/cbo/validate/:id",
+  "/api/cbo/validate/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(cboController.validate)
 );
 app.get(
-  "/cbo/invalidate/:id",
+  "/api/cbo/invalidate/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(cboController.invalidate)
 );
 app.delete(
-  "/cbo/:id",
+  "/api/cbo/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(cboController.delete)
 );
 app.post(
-  "/cbo-import",
+  "/api/cbo-import",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(cboController.doImport)
 );
@@ -138,20 +138,20 @@ app.post(
 // Habilidades
 // =====================
 
-app.get("/habilidade", routeWrapper(habilidadeController.list));
-app.post("/habilidade", guard(), routeWrapper(habilidadeController.create));
+app.get("/api/habilidade", routeWrapper(habilidadeController.list));
+app.post("/api/habilidade", guard(), routeWrapper(habilidadeController.create));
 app.post(
-  "/habilidade/:id",
+  "/api/habilidade/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(habilidadeController.edit)
 );
 app.delete(
-  "/habilidade/:id",
+  "/api/habilidade/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(habilidadeController.delete)
 );
 app.post(
-  "/habilidade-import",
+  "/api/habilidade-import",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(habilidadeController.doImport)
 );
@@ -160,25 +160,25 @@ app.post(
 // Qualificacoes
 // =====================
 
-app.get("/qualificacao", routeWrapper(qualificacaoController.list));
-app.post("/qualificacao", guard(), routeWrapper(qualificacaoController.create));
+app.get("/api/qualificacao", routeWrapper(qualificacaoController.list));
+app.post("/api/qualificacao", guard(), routeWrapper(qualificacaoController.create));
 app.post(
-  "/qualificacao/:id",
+  "/api/qualificacao/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(qualificacaoController.update)
 );
 app.get(
-  "/qualificacao/validate/:id",
+  "/api/qualificacao/validate/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(qualificacaoController.validate)
 );
 app.get(
-  "/qualificacao/invalidate/:id",
+  "/api/qualificacao/invalidate/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(qualificacaoController.invalidate)
 );
 app.delete(
-  "/qualificacao/:id",
+  "/api/qualificacao/:id",
   guard(),
   routeWrapper(qualificacaoController.delete)
 );
@@ -187,11 +187,11 @@ app.delete(
 // Vagas
 // =====================
 
-app.get("/vagas", withUsuario, routeWrapper(vagaController.list));
-app.get("/vagas-salvas", guard([]), routeWrapper(vagaController.listSalvadas));
-app.get("/vaga/:id", withUsuario, routeWrapper(vagaController.show));
+app.get("/api/vagas", withUsuario, routeWrapper(vagaController.list));
+app.get("/api/vagas-salvas", guard([]), routeWrapper(vagaController.listSalvadas));
+app.get("/api/vaga/:id", withUsuario, routeWrapper(vagaController.show));
 app.get(
-  "/minhas-vagas",
+  "/api/minhas-vagas",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,
@@ -201,7 +201,7 @@ app.get(
   routeWrapper(vagaController.listMine)
 );
 app.post(
-  "/vaga",
+  "/api/vaga",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,
@@ -211,7 +211,7 @@ app.post(
   routeWrapper(vagaController.save)
 );
 app.post(
-  "/vaga/:id",
+  "/api/vaga/:id",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,
@@ -221,7 +221,7 @@ app.post(
   routeWrapper(vagaController.save)
 );
 app.delete(
-  "/vaga/:id",
+  "/api/vaga/:id",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,
@@ -236,7 +236,7 @@ app.delete(
 // =====================
 
 app.get(
-  "/candidaturas",
+  "/api/candidaturas",
   guard([
     USUARIO_PLANOS.PF_FREE,
     USUARIO_PLANOS.PF_SMART,
@@ -245,7 +245,7 @@ app.get(
   routeWrapper(propostaController.listPF)
 );
 app.get(
-  "/candidatura/:id",
+  "/api/candidatura/:id",
   guard([
     USUARIO_PLANOS.PF_FREE,
     USUARIO_PLANOS.PF_SMART,
@@ -254,7 +254,7 @@ app.get(
   routeWrapper(propostaController.show)
 );
 app.post(
-  "/candidaturas",
+  "/api/candidaturas",
   guard([
     USUARIO_PLANOS.PF_FREE,
     USUARIO_PLANOS.PF_SMART,
@@ -263,7 +263,7 @@ app.post(
   routeWrapper(propostaController.create)
 );
 app.delete(
-  "/candidatura/:id",
+  "/api/candidatura/:id",
   guard([
     USUARIO_PLANOS.PF_FREE,
     USUARIO_PLANOS.PF_SMART,
@@ -273,7 +273,7 @@ app.delete(
 );
 //
 app.get(
-  "/propostas",
+  "/api/propostas",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,
@@ -283,7 +283,7 @@ app.get(
   routeWrapper(propostaController.listPJ)
 );
 app.get(
-  "/proposta/:id",
+  "/api/proposta/:id",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,
@@ -293,7 +293,7 @@ app.get(
   routeWrapper(propostaController.showPJ)
 );
 app.post(
-  "/proposta/:id/ver-candidato",
+  "/api/proposta/:id/ver-candidato",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,
@@ -303,7 +303,7 @@ app.post(
   routeWrapper(propostaController.verDados)
 );
 app.post(
-  "/proposta/:id/set-contratado",
+  "/api/proposta/:id/set-contratado",
   guard([
     USUARIO_PLANOS.PJ_FREE,
     USUARIO_PLANOS.PJ_PREMIUM,

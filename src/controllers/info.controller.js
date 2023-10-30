@@ -165,7 +165,7 @@ exports.postPF = async (req, res) => {
   if (req.body.nacionalidade) data.nacionalidade = req.body.nacionalidade;
   if (req.body.nascimento) data.nascimento = parseDMYdate(req.body.nascimento);
   if (req.body.pcd) data.pcd = !!req.body.pcd;
-  if (req.body.pcdDescrição) data.pcdDescrição = !!req.body.pcdDescrição;
+  if (req.body.pcdDescricao) data.pcdDescricao = req.body.pcdDescricao;
   if (req.body.aceitaTrabalharDistancia)
     data.aceitaTrabalharDistancia = Math.floor(
       req.body.aceitaTrabalharDistancia
