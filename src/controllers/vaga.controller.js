@@ -22,15 +22,18 @@ const tiposJornada = Object.values(TIPO_JORNADA);
 
 const VagaSchema = require("../schemas/vaga.schema");
 const PropostaSchema = require("../schemas/proposta.schema");
+const UsuarioSchema = require("../schemas/usuario.schema");
 const PJSchema = require("../schemas/pj.schema");
 const PFSchema = require("../schemas/pf.schema");
 const CBOSchema = require("../schemas/cbo.schema");
 const HabilidadeSchema = require("../schemas/habilidade.schema");
 const QualificacaoSchema = require("../schemas/qualificacao.schema");
 const getMatchWords = require("../helpers/getMatchWords");
+const { getSingleUser } = require("./auth.controller");
 
 const VagaModel = mongoose.model("Vaga", VagaSchema);
 const PropostaModel = mongoose.model("Proposta", PropostaSchema);
+const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
 const PFModel = mongoose.model("PF", PFSchema);
 const CBOModel = mongoose.model("CBO", CBOSchema);
@@ -308,11 +311,11 @@ exports.save = async (req, res) => {
 
   if (req.params.id) {
     const vaga = await VagaModel.findById(req.params.id);
-    if (vaga.ownerId !== req.usuario._id)
+    if (vaga.ownerId !== req.usuario._id && !req.usuario.isMasterAdmin)
       throw new Error("Acesso negado ao alterar vaga criada por outrém");
     // throw new Error(`Acesso negado ao alterar vaga criada por outrém - vaga.ownerId: ${vaga.ownerId}, usuario._id: ${req.usuario._id}`);
 
-    if (vaga.contratou)
+    if (vaga.contratou && !req.usuario.isMasterAdmin)
       throw new Error("Não é permitido fazer alterações em uma vaga que já contratou um candidato");
 
     return await VagaModel.findByIdAndUpdate(req.params.id, data, {
@@ -384,14 +387,14 @@ exports.show = async (req, res) => {
     }
   }
 
-  if (req.usuario) {
+  if (req.usuario && !req.usuario.isMasterAdmin) {
     const candidato = await PFModel.findById(req.usuario._id).lean();
     const matchObj = getVagaMatch(vaga, candidato)
     vaga.match = matchObj.match;
     vaga.matchDesc = matchObj.matchDesc;
   }
 
-  if (!vaga.ocultarEmpresa) {
+  if (!vaga.ocultarEmpresa && !req.usuario.isMasterAdmin) {
     const empresa = await PJModel.findById(
       vaga.ownerId,
       "endereco nomeFantasia telefones links"
@@ -400,6 +403,16 @@ exports.show = async (req, res) => {
       ...vaga,
       empresa,
     };
+  }
+  
+  if (req.usuario.isMasterAdmin) {
+    vaga.owner = await getSingleUser({
+      ...req,
+      params: {
+        ...req.params,
+        id: vaga.ownerId,
+      }
+    });
   }
 
   return vaga;
@@ -551,13 +564,23 @@ exports.list = async (req, res) => {
   const empresas = Array.from(
     new Set(
       data
-        .map((vaga) => (vaga.ocultarEmpresa ? null : vaga.ownerId))
+        .map((vaga) => {
+          if (req.usuario.isMasterAdmin) return vaga.ownerId;
+          if (!vaga.ocultarEmpresa) return vaga.ownerId;
+          return null;
+        })
         .filter((x) => x)
     )
   );
   let objEmpresas = [];
   if (empresas.length > 0) {
     objEmpresas = await PJModel.find({
+      _id: { $in: empresas },
+    }).lean();
+  }
+  let objOwners = [];
+  if (empresas.length > 0 && req.usuario.isMasterAdmin) {
+    objOwners = await UsuarioModel.find({
       _id: { $in: empresas },
     }).lean();
   }
@@ -612,7 +635,10 @@ exports.list = async (req, res) => {
       }
     }
 
-    if (!vaga.ocultarEmpresa) {
+    let showEmpresa = true;
+    if (vaga.ocultarEmpresa) showEmpresa = false;
+    if (req.usuario.isMasterAdmin) showEmpresa = true;
+    if (showEmpresa) {
       const objEmpresa = objEmpresas.find((x) => x._id === vaga.ownerId);
       if (objEmpresa) {
         obj.empresa = {
@@ -620,8 +646,15 @@ exports.list = async (req, res) => {
           nome: objEmpresa.nomeFantasia,
         };
       }
+      if (req.usuario.isMasterAdmin) {
+        const objOwner = objOwners.find((x) => x._id === vaga.ownerId);
+        obj.owner = {
+          _id: objOwner._id,
+          plano: objOwner.plano,
+          email: objOwner.email,
+        };
+      }
     }
-    delete obj.ownerId;
 
     if (vaga.habilidades) {
       obj.habilidades = vaga.habilidades

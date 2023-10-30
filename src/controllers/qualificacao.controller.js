@@ -33,7 +33,7 @@ exports.update = async (req, res) => {
   if (nome) {
     const newId = strToSlug(nome);
     const qualificacaoExists = await QualificacaoModel.findById(newId);
-    if (qualificacaoExists._id !== id) throw new Error("Qualificação já existe");
+    if (qualificacaoExists) throw new Error("Qualificação já existe");
   }
 
   const data = { nome };

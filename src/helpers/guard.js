@@ -21,6 +21,7 @@ const withUsuario = (req, res, next) => {
           _id: decodedToken._id,
           email: decodedToken.email,
           plano: decodedToken.plano,
+          isMasterAdmin: decodedToken.plano === USUARIO_PLANOS.MASTER_ADMIN,
           createdAt: decodedToken.createdAt,
           updatedAt: decodedToken.updatedAt,
         };
@@ -40,12 +41,14 @@ const guard =
           return res.status(401).send({ message: "Not authorized", error });
         } else {
           let isAuthorized = !planos || planos.length < 1 || planos.includes(decodedToken.plano);
-          if (decodedToken.plano === USUARIO_PLANOS.MASTER_ADMIN) isAuthorized = true;
+          const isMasterAdmin = decodedToken.plano === USUARIO_PLANOS.MASTER_ADMIN;
+          if (isMasterAdmin) isAuthorized = true;
           if (isAuthorized) {
             req.usuario = {
               _id: decodedToken._id,
               email: decodedToken.email,
               plano: decodedToken.plano,
+              isMasterAdmin,
               createdAt: decodedToken.createdAt,
               updatedAt: decodedToken.updatedAt,
             };
