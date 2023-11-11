@@ -14,6 +14,7 @@ const getToken = (req) => {
 
 const withUsuario = (req, res, next) => {
   const token = getToken(req);
+  req.usuario = {};
   if (token) {
     jwt.verify(token, config.jwtSecret, (error, decodedToken) => {
       if (!error) {
