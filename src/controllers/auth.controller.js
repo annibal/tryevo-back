@@ -8,6 +8,7 @@ const { USUARIO_PLANOS } = require("../schemas/enums");
 const UsuarioSchema = require("../schemas/usuario.schema");
 const PFSchema = require("../schemas/pf.schema");
 const PJSchema = require("../schemas/pj.schema");
+const { sendEmail, EMAIL_TYPES } = require("./sendEmail");
 
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
 const PFModel = mongoose.model("PF", PFSchema);
@@ -63,6 +64,8 @@ exports.register = async (req, res) => {
   const usuarioObj = await UsuarioModel.create(data);
   if (!usuarioObj) throw new Error("Erro ao criar usuário");
 
+  await sendEmail(email, email, EMAIL_TYPES.NEW_SIGNUP);
+
   return getAuthResponse(usuarioObj);
 };
 
@@ -84,12 +87,13 @@ exports.updatePlano = async (req, res) => {
 };
 
 exports.elevate = async (req, res) => {
-  const id = req.usuario?._id
+  const id = req.usuario?._id;
   if (!id) throw new Error("Usuário não encontrado na sessão");
 
   const masterpass = req.params.masterpass;
-  if (masterpass !== 'tryevo_master_password') throw new Error("Senha mestre errada");
-  
+  if (masterpass !== "tryevo_master_password")
+    throw new Error("Senha mestre errada");
+
   const usuarioObj = await UsuarioModel.findByIdAndUpdate(
     id,
     { plano: USUARIO_PLANOS.MASTER_ADMIN },
@@ -97,17 +101,17 @@ exports.elevate = async (req, res) => {
   );
   if (!usuarioObj) throw new Error("Erro ao elevar usuário");
 
-  return 'Elevado com sucesso!';
-}
+  return "Elevado com sucesso!";
+};
 
 exports.changeAccountType = async (req, res) => {
-  const id = req.usuario?._id
+  const id = req.usuario?._id;
   if (!id) throw new Error("Usuário não encontrado na sessão");
-  
+
   const { tipo } = req.body;
   let plano = null;
-  if (tipo === 'pf') plano = USUARIO_PLANOS.PF_FREE;
-  if (tipo === 'pj') plano = USUARIO_PLANOS.PJ_FREE;
+  if (tipo === "pf") plano = USUARIO_PLANOS.PF_FREE;
+  if (tipo === "pj") plano = USUARIO_PLANOS.PJ_FREE;
   if (!tipo) {
     throw new Error(`Tipo inválido "${tipo}" ao alterar conta`);
   }
@@ -147,9 +151,9 @@ exports.deleteSelf = async (req, res) => {
 };
 
 exports.changePassword = async (req, res) => {
-  const { senha} = req.body;
+  const { senha } = req.body;
   if (!senha) throw new Error("Senha não informada");
-  const id = req.usuario?._id
+  const id = req.usuario?._id;
   if (!id) throw new Error("Usuário não encontrado na sessão");
   const usuario = await UsuarioModel.findById(id);
   if (!usuario) throw new Error("Usuario não encontrado");
@@ -161,12 +165,14 @@ exports.changePassword = async (req, res) => {
     { new: true, runValidators: true }
   );
   if (!usuarioObj) throw new Error("Erro ao alterar senha");
-  
+
+  await sendEmail(usuario.email, usuario.email, EMAIL_TYPES.PASSWORD_CHANGED);
+
   return getAuthResponse(usuarioObj);
-}
+};
 
 exports.changeUserPassword = async (req, res) => {
-  const {id, senha} = req.body;
+  const { id, senha } = req.body;
   if (!senha) throw new Error("Senha não informada");
   const usuario = await UsuarioModel.findById(id);
   if (!usuario) throw new Error("Usuario não encontrado");
@@ -178,13 +184,13 @@ exports.changeUserPassword = async (req, res) => {
     { new: true, runValidators: true }
   );
   if (!usuarioObj) throw new Error("Erro ao alterar senha do usuário");
-  
+
   return getAuthResponse(usuarioObj);
-}
+};
 
 exports.getSingleUser = async (req, res) => {
-  return await UsuarioModel.findById(req.params.id)
-}
+  return await UsuarioModel.findById(req.params.id);
+};
 
 exports.allUsers = async (req, res) => {
   const { from = 0, to = 30, q, planos, ids } = req.query;
@@ -194,10 +200,10 @@ exports.allUsers = async (req, res) => {
     search.email = { $regex: q, $options: "i" };
   }
   if (planos) {
-    search.plano = { $in: planos.split(',') };
+    search.plano = { $in: planos.split(",") };
   }
   if (ids) {
-    search._id = { $in: ids.split(',').map(x => x.trim()) };
+    search._id = { $in: ids.split(",").map((x) => x.trim()) };
   }
 
   const total = await UsuarioModel.countDocuments(search);
@@ -218,31 +224,31 @@ exports.allUsers = async (req, res) => {
   };
 };
 
-
 const fnRemocaoDados = async (id) => {
   const pfData = await PFModel.findByIdAndDelete(id);
   const pjData = await PJModel.findByIdAndDelete(id);
-  if (!pfData && !pjData) throw new Error('Nenhum dado encontrado para esse usuário');
+  if (!pfData && !pjData)
+    throw new Error("Nenhum dado encontrado para esse usuário");
   return {
     pfData,
     pjData,
   };
-}
+};
 
 exports.remocaoDados = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
   return await fnRemocaoDados(req.usuario?._id);
-}
+};
 exports.remocaoHistorico = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
-  throw new Error('Não implementado');
+  throw new Error("Não implementado");
   // Vagas Salvas
   // Propostas
-}
+};
 exports.remocaoTotal = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
   try {
     await fnRemocaoDados(req.usuario?._id);
   } catch (e) {}
   return await UsuarioModel.findByIdAndDelete(req.usuario?._id);
-}
+};
