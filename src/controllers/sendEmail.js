@@ -6,15 +6,26 @@ const mailerSend = new MailerSend({
 });
 const sentFrom = new Sender("app@tryevo.com.br", "TryEvo");
 
+// https://app.mailersend.com/templates/TEMPLATE_ID/edit
+
 const EMAIL_TYPES = {
   FORGOT_PASSWORD: "FORGOT_PASSWORD",
   NEW_LOGIN: "NEW_LOGIN",
   NEW_SIGNUP: "NEW_SIGNUP",
   PASSWORD_CHANGED: "PASSWORD_CHANGED",
-}
+};
 const EMAIL_TYPE_CONFIG = {
   [EMAIL_TYPES.FORGOT_PASSWORD]: {
     title: "Reset de Senha",
+    templateId: "k68zxl2px0e4j905",
+    parseParams: (params) => [
+      {
+        email: params.email,
+        substitutions: [
+          { var: "verificationCode", value: params.verificationCode },
+        ],
+      },
+    ],
   },
   [EMAIL_TYPES.NEW_LOGIN]: {
     title: "Novo login",
@@ -34,9 +45,11 @@ async function _sendEmail(
   recipientName,
   subject,
   templateId,
-  emailContent,
+  variables
 ) {
-  console.log(`Preparing email to "${recipientEmail}", "${recipientName}", templateId=${templateId}`);
+  console.log(
+    `Preparing email to "${recipientEmail}", "${recipientName}", templateId=${templateId}`
+  );
 
   const recipients = [new Recipient(recipientEmail, recipientName)];
 
@@ -45,12 +58,13 @@ async function _sendEmail(
     .setReplyTo(sentFrom)
     .setTo(recipients)
     .setSubject(subject);
+  //
 
-  if (emailContent) {
-    emailParams.setHtml(emailContent)
-  }
   if (templateId) {
-    emailParams.setTemplateId(templateId)
+    emailParams.setTemplateId(templateId);
+  }
+  if (variables) {
+    emailParams.setVariables(variables);
   }
 
   console.log(`Sending email...`);
@@ -61,21 +75,26 @@ async function _sendEmail(
 
 async function sendEmail(recipientEmail, recipientName, type, params) {
   try {
-    const emailTypeConfig = EMAIL_TYPE_CONFIG[type]
+    const emailTypeConfig = EMAIL_TYPE_CONFIG[type];
     if (emailTypeConfig) {
-      let content = null;
+      let variables = null;
       if (typeof emailTypeConfig.parseParams === "function") {
-        content = emailTypeConfig.parseParams(params);
+        variables = emailTypeConfig.parseParams({
+          email: recipientEmail,
+          name: recipientName,
+          type,
+          ...params,
+        });
       }
       return await _sendEmail(
         recipientEmail,
         recipientName,
         emailTypeConfig.title,
         emailTypeConfig.templateId,
-        content,
+        variables
       );
     } else {
-      console.log(`Send Email of type "${type}" not implemented, nothing sent`)
+      console.log(`Send Email of type "${type}" not implemented, nothing sent`);
     }
   } catch (e) {
     console.error("Error on sending email", { recipientEmail, type, params });
@@ -86,4 +105,4 @@ async function sendEmail(recipientEmail, recipientName, type, params) {
 module.exports = {
   sendEmail,
   EMAIL_TYPES,
-}
+};

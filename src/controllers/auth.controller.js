@@ -224,6 +224,28 @@ exports.allUsers = async (req, res) => {
   };
 };
 
+exports.forgotPasswordSendCode = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    throw new Error("Email é obrigatório");
+  }
+
+  const emailParts = email.split("@").map(x => x.replace(/[^a-z0-9\-_.]/gi, ""))
+  const emailRegex = `^${emailParts[0]}@${emailParts[1]}$`
+  const usuarioObj = await UsuarioModel.findOne({
+    email: { $regex: emailRegex, $options: "i" },
+  });
+  if (!usuarioObj) {
+    throw new Error(`Conta com email ${email} não encontrada`);
+  }
+
+  await sendEmail(email, email, EMAIL_TYPES.FORGOT_PASSWORD, {
+    verificationCode: "Minha Benga",
+  });
+
+  return true;
+};
+
 const fnRemocaoDados = async (id) => {
   const pfData = await PFModel.findByIdAndDelete(id);
   const pjData = await PJModel.findByIdAndDelete(id);
