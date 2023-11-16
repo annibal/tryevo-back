@@ -64,7 +64,7 @@ exports.register = async (req, res) => {
   const usuarioObj = await UsuarioModel.create(data);
   if (!usuarioObj) throw new Error("Erro ao criar usuário");
 
-  await sendEmail(email, email, EMAIL_TYPES.NEW_SIGNUP);
+  await sendEmail({ email, name: email, type: EMAIL_TYPES.NEW_SIGNUP });
 
   return getAuthResponse(usuarioObj);
 };
@@ -166,7 +166,11 @@ exports.changePassword = async (req, res) => {
   );
   if (!usuarioObj) throw new Error("Erro ao alterar senha");
 
-  await sendEmail(usuario.email, usuario.email, EMAIL_TYPES.PASSWORD_CHANGED);
+  await sendEmail({
+    email: usuario.email,
+    name: usuario.email,
+    type: EMAIL_TYPES.PASSWORD_CHANGED,
+  });
 
   return getAuthResponse(usuarioObj);
 };
@@ -230,8 +234,10 @@ exports.forgotPasswordSendCode = async (req, res) => {
     throw new Error("Email é obrigatório");
   }
 
-  const emailParts = email.split("@").map(x => x.replace(/[^a-z0-9\-_.]/gi, ""))
-  const emailRegex = `^${emailParts[0]}@${emailParts[1]}$`
+  const emailParts = email
+    .split("@")
+    .map((x) => x.replace(/[^a-z0-9\-_.]/gi, ""));
+  const emailRegex = `^${emailParts[0]}@${emailParts[1]}$`;
   const usuarioObj = await UsuarioModel.findOne({
     email: { $regex: emailRegex, $options: "i" },
   });
@@ -239,18 +245,40 @@ exports.forgotPasswordSendCode = async (req, res) => {
     throw new Error(`Conta com email ${email} não encontrada`);
   }
 
-  await sendEmail(email, email, EMAIL_TYPES.FORGOT_PASSWORD, {
-    verificationCode: "Minha Benga",
+  const verificationCode = id6();
+
+  await sendEmail({
+    email: email,
+    name: email,
+    type: EMAIL_TYPES.FORGOT_PASSWORD,
+    params: {
+      verificationCode,
+    },
   });
 
   return true;
 };
 
-const fnRemocaoDados = async (id) => {
+const fnRemocaoDados = async (id, email) => {
   const pfData = await PFModel.findByIdAndDelete(id);
   const pjData = await PJModel.findByIdAndDelete(id);
-  if (!pfData && !pjData)
+  if (!pfData && !pjData) {
     throw new Error("Nenhum dado encontrado para esse usuário");
+  }
+
+  let name = email;
+  if (pfData) {
+    name = pfData.nomePreferido;
+    if (!name) name = [pfData.nomePrimeiro, pfData.nomeUltimo].join(" ");
+  }
+  if (pjData) {
+    if (!name) name = pjData.nomeResponsavel;
+    if (!name) name = pjData.nomeFantasia;
+    if (!name) name = pjData.razaoSocial;
+  }
+
+  // await sendEmail({ email, name, type: EMAIL_TYPES.REMOCAO_DADOS });
+
   return {
     pfData,
     pjData,
@@ -259,7 +287,7 @@ const fnRemocaoDados = async (id) => {
 
 exports.remocaoDados = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
-  return await fnRemocaoDados(req.usuario?._id);
+  return await fnRemocaoDados(req.usuario?._id, req.usuario.email);
 };
 exports.remocaoHistorico = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
@@ -270,7 +298,7 @@ exports.remocaoHistorico = async (req, res) => {
 exports.remocaoTotal = async (req, res) => {
   if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
   try {
-    await fnRemocaoDados(req.usuario?._id);
+    await fnRemocaoDados(req.usuario?._id, req.usuario.email);
   } catch (e) {}
   return await UsuarioModel.findByIdAndDelete(req.usuario?._id);
 };

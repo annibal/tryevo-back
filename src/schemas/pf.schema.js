@@ -34,10 +34,10 @@ const PFSchema = SchemaFactory({
   telefones: { type: [ManySchema] },
   links: { type: [ManySchema] },
   
-  cpf: { type: String, minlength: 11 },
-  rg: { type: String, minlength: 9 },
-  passaporte: { type: String, minlength: 8 },
-  cnh: { type: String, minlength: 11 },
+  cpf: { type: String  }, // minlength: 11
+  rg: { type: String }, // minlength: 9 
+  passaporte: { type: String }, // minlength: 8 
+  cnh: { type: String  }, // minlength: 11
   categoriaCNH: {
     type: String,
     required: true,

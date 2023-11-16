@@ -7,10 +7,17 @@ const authController = require("./auth.controller");
 const PropostaSchema = require("../schemas/proposta.schema");
 const VagaSchema = require("../schemas/vaga.schema");
 const PFSchema = require("../schemas/pf.schema");
+const PJSchema = require("../schemas/pj.schema");
+const UsuarioSchema = require("../schemas/usuario.schema");
+const { sendEmail, EMAIL_TYPES, sendBulkEmails } = require("./sendEmail");
+const capitalize = require("../helpers/capitalize");
+const formatTelefone = require("../helpers/formatTelefone");
 
 const PropostaModel = mongoose.model("Proposta", PropostaSchema);
 const VagaModel = mongoose.model("Vaga", VagaSchema);
 const PFModel = mongoose.model("PF", PFSchema);
+const PJModel = mongoose.model("PJ", PJSchema);
+const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
 
 exports.create = async (req, res) => {
   const data = {
@@ -42,7 +49,42 @@ exports.create = async (req, res) => {
     throw new Error("Vaga não existe");
   }
 
-  return await PropostaModel.create(data);
+  const newProposta = await PropostaModel.create(data);
+
+  const candidato = await infoController.showPF({
+    ...req,
+    params: { id: newProposta.candidatoId },
+  });
+  if (!candidato) throw new Error("Dados do candidato não encontrados");
+
+  const usuario = await authController.getSingleUser({
+    ...req,
+    params: { id: newProposta.candidatoId },
+  });
+  candidato.email = (usuario || {}).email;
+
+  const usuarioEmpresa = await authController.getSingleUser({
+    ...req,
+    params: { id: vaga.ownerId },
+  });
+
+  let nome = candidato.nomePreferido;
+  if (!nome) nome = [candidato.nomePrimeiro, candidato.nomeUltimo].join(" ");
+  if (!nome) nome = candidato.email;
+  await sendEmail({
+    email: usuarioEmpresa?.email,
+    name: usuarioEmpresa?.email,
+    type: EMAIL_TYPES.NOVA_PROPOSTA,
+    params: {
+      vagaId: vaga._id,
+      vagaNome: vaga.apelido || vaga.titulo,
+      propostaId: data._id,
+      // candidatoId: newProposta.candidatoId,
+      candidatoNome: nome,
+    },
+  });
+
+  return newProposta;
 };
 
 exports.verDados = async (req, res) => {
@@ -69,6 +111,33 @@ exports.verDados = async (req, res) => {
   );
   if (!proposta) throw new Error("Erro ao registrar proposta como visualizada");
 
+  let vagaNome = proposta.vagaId;
+  let empresaNome = "";
+  const vaga = await VagaModel.findById(proposta.vagaId).lean();
+  if (vaga) {
+    vagaNome = vaga.titulo;
+    const empresa = await PJModel.findById(vaga.ownerId).lean();
+    if (empresa) {
+      empresaNome = empresa.nomeFantasia;
+      if (!empresaNome) empresaNome = pjData.razaoSocial;
+    }
+  }
+
+  let nome = candidato.nomePreferido;
+  if (!nome) nome = [candidato.nomePrimeiro, candidato.nomeUltimo].join(" ");
+  if (!nome) nome = candidato.email;
+  await sendEmail({
+    email: candidato.email,
+    name: nome,
+    type: EMAIL_TYPES.CANDIDATURA_VISUALIZADA,
+    params: {
+      empresaNome,
+      vagaId: proposta.vagaId,
+      vagaNome,
+      candidaturaId: proposta._id,
+    },
+  });
+
   return candidato;
 };
 
@@ -80,28 +149,114 @@ exports.setContratado = async (req, res) => {
   const vaga = await VagaModel.findById(proposta.vagaId).lean();
   if (!vaga) throw new Error("Vaga não existe");
   if (vaga.contratou === id) throw new Error("Proposta já contratada");
-  if (vaga.contratou != null && vaga.contratou !== id)
+  if (vaga.contratou != null && vaga.contratou !== id) {
     throw new Error("Vaga já foi preenchida por outro candidato");
+  }
   if (vaga.active === false) throw new Error("Vaga inativa não pode contratar");
 
-  proposta = await PropostaModel.findByIdAndUpdate(
-    id,
-    { ...proposta, contratou: true },
-    { new: true, runValidators: true }
-  );
-  if (!proposta) throw new Error("Erro ao registrar proposta como contratada");
+  // throw new Error("temp err");
 
-  await VagaModel.findByIdAndUpdate(
-    proposta.vagaId,
-    {
-      contratou: proposta.candidatoId,
-      active: false,
-    },
-    {
-      new: true,
-      runValidators: true,
-    }
+  // proposta = await PropostaModel.findByIdAndUpdate(
+  //   id,
+  //   { ...proposta, contratou: true },
+  //   { new: true, runValidators: true }
+  // );
+  // if (!proposta) throw new Error("Erro ao registrar proposta como contratada");
+
+  // await VagaModel.findByIdAndUpdate(
+  //   proposta.vagaId,
+  //   {
+  //     contratou: proposta.candidatoId,
+  //     active: false,
+  //   },
+  //   {
+  //     new: true,
+  //     runValidators: true,
+  //   }
+  // );
+
+  const todasPropostas = await PropostaModel.find({
+    vagaId: proposta.vagaId,
+  }).lean();
+
+  const candidatosIds = Array.from(
+    new Set(todasPropostas.map((p) => p.candidatoId))
   );
+  const todosCandidatosUsuario = await UsuarioModel.find({
+    _id: { $in: candidatosIds },
+  }).lean();
+  const todosCandidatosPF = await PFModel.find({
+    _id: { $in: candidatosIds },
+  }).lean();
+  let empresaNome = "";
+  let empresa = await PJModel.findById(vaga.ownerId).lean();
+  if (empresa) {
+    empresaNome = empresa.nomeFantasia;
+    if (!empresaNome) empresaNome = pjData.razaoSocial;
+  } else {
+    empresa = {};
+  }
+
+  const emails = todasPropostas
+    .map((p) => {
+      const candUsuario = todosCandidatosUsuario.find(
+        (c) => c._id === p.candidatoId
+      );
+      if (!candUsuario) return;
+
+      const paramsEmail = {
+        email: candUsuario.email,
+        name: candUsuario.email,
+        type: EMAIL_TYPES.VAGA_PREENCHIDA,
+        params: {
+          candidatoNome: candUsuario.email,
+          empresaNome,
+          vagaId: vaga._id,
+          vagaNome: vaga.titulo,
+          candidaturaId: proposta._id,
+          countOutrosCandidatos: todasPropostas.length,
+          contatoEmpresa: `${empresaNome} - ${empresa.cnpj || ""}`,
+        },
+      };
+      const candPF = todosCandidatosPF.find((c) => c._id === p.candidatoId);
+      if (candPF) {
+        let nome = candPF.nomePreferido;
+        if (!nome) nome = [candPF.nomePrimeiro, candPF.nomeUltimo].join(" ");
+        if (!nome) nome = candPF.email;
+        paramsEmail.name = nome;
+        paramsEmail.params.candidatoNome = nome;
+      }
+
+      if (p._id === proposta._id) {
+        paramsEmail.type = EMAIL_TYPES.CONTRATADO;
+        let dadosContato = [];
+        (empresa.telefones || []).forEach((telefone) => {
+          const tipo = capitalize(telefone.tipo);
+          const valor = formatTelefone(telefone.valor);
+          dadosContato.push(`${tipo}: ${valor}`);
+        });
+        (empresa.links || []).forEach((link) => {
+          const tipo = capitalize(link.tipo);
+          const valor = formatTelefone(link.valor);
+          const style =
+            "font: inherit; text-decoration: inherit; color: inherit;";
+          dadosContato.push(
+            `<a href="${valor}" style="${style}" target="_blank">${tipo}: ${valor}</a>`
+          );
+        });
+
+        if (dadosContato.length == 0) {
+          dadosContato = [empresaNome, "Sem dados de contato"]
+        }
+        paramsEmail.params.contatoEmpresa = dadosContato.join("<br />\n");
+      }
+
+      return paramsEmail;
+    })
+    .filter((x) => !!x);
+
+  // console.log(emails);
+  await sendBulkEmails(emails);
 
   return proposta;
 };
@@ -111,7 +266,8 @@ exports.delete = async (req, res) => {
   const proposta = await PropostaModel.findById(id);
   if (!proposta) throw new Error("Proposta não encontrada");
 
-  if (proposta.contratou) throw new Error("Erro ao excluir proposta que já foi contratada");
+  if (proposta.contratou)
+    throw new Error("Erro ao excluir proposta que já foi contratada");
 
   await PropostaModel.findByIdAndDelete(id);
   return {
