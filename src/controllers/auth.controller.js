@@ -189,6 +189,12 @@ exports.changeUserPassword = async (req, res) => {
   );
   if (!usuarioObj) throw new Error("Erro ao alterar senha do usuário");
 
+  await sendEmail({
+    email: usuario.email,
+    name: usuario.email,
+    type: EMAIL_TYPES.PASSWORD_CHANGED,
+  });
+
   return getAuthResponse(usuarioObj);
 };
 
@@ -246,6 +252,14 @@ exports.forgotPasswordSendCode = async (req, res) => {
   }
 
   const verificationCode = id6();
+  const nowPlus15min = new Date(+new Date() + 900000);
+
+  const usuarioObj2 = await UsuarioModel.findByIdAndUpdate(
+    usuarioObj._id,
+    { resetId: verificationCode, resetMaxDate: nowPlus15min },
+    { new: true, runValidators: true }
+  );
+  if (!usuarioObj2) throw new Error("Erro ao preparar código verificador");
 
   await sendEmail({
     email: email,
@@ -257,6 +271,59 @@ exports.forgotPasswordSendCode = async (req, res) => {
   });
 
   return true;
+};
+
+exports.forgotPasswordResetWithCode = async (req, res) => {
+  const { email, code, newSenha } = req.body;
+  if (!email) {
+    throw new Error("Email é necessário para redefinir a senha");
+  }
+  if (!code) {
+    throw new Error(
+      "Código de verificação é necessário para redefinir a senha"
+    );
+  }
+  if (!newSenha) {
+    throw new Error("Nova Senha é necessária para redefinir a senha");
+  }
+
+  const emailParts = email
+    .split("@")
+    .map((x) => x.replace(/[^a-z0-9\-_.]/gi, ""));
+  const emailRegex = `^${emailParts[0]}@${emailParts[1]}$`;
+  const usuarioObj = await UsuarioModel.findOne({
+    email: { $regex: emailRegex, $options: "i" },
+  });
+
+  if (!usuarioObj) {
+    throw new Error(`Conta com email ${email} não encontrada`);
+  }
+  if (usuarioObj.resetId !== code && usuarioObj.resetId?.length > 4) {
+    throw new Error(`Código de verificação inválido`);
+  }
+  if (new Date(usuarioObj.resetMaxDate) < new Date()) {
+    throw new Error(`Código de verificação expirado`);
+  }
+
+  const hashSenha = await encryptPassword(newSenha);
+  const usuarioObj2 = await UsuarioModel.findByIdAndUpdate(
+    usuarioObj._id,
+    { senha: hashSenha, resetId: "", resetMaxDate: "" },
+    { new: true, runValidators: true }
+  );
+  if (!usuarioObj2) throw new Error("Erro ao alterar senha do usuário");
+
+  await sendEmail({
+    email: usuarioObj2.email,
+    name: usuarioObj2.email,
+    type: EMAIL_TYPES.PASSWORD_CHANGED,
+  });
+
+  return {
+    _id: usuarioObj2._id,
+    email: usuarioObj2.email,
+    plano: usuarioObj2.plano,
+  };
 };
 
 const fnRemocaoDados = async (id, email) => {

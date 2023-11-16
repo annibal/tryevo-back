@@ -542,6 +542,7 @@ exports.list = async (req, res) => {
     "endereco",
     "ocultarEmpresa",
     "ownerId",
+    "contratou",
   ];
 
   const total = await VagaModel.countDocuments(search);
@@ -686,6 +687,8 @@ exports.list = async (req, res) => {
         })
         .filter((x) => x);
     }
+
+    obj.contratou = !!obj.contratou;
 
     return obj;
   });

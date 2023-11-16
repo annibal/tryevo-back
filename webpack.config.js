@@ -1,12 +1,14 @@
 const path = require('path');
-// const nodeExternals = require('webpack-node-externals');
+const CopyPlugin = require("copy-webpack-plugin");
+
+const outputPath = path.resolve(__dirname, 'build');
 
 module.exports = {
   entry: './api.js',
   mode: 'development',
   target: 'node17.9',
   output: {
-    path: path.resolve(__dirname, 'build'),
+    path: outputPath,
     filename: 'api.js'
   },
   resolve: {
@@ -26,6 +28,15 @@ module.exports = {
         }
       }
     ]
-  }
-  // externals: [ nodeExternals() ]
+  },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, "src/controllers/emailTemplates"),
+          to: path.resolve(outputPath, "emailTemplates"),
+        }
+      ],
+    }),
+  ],
 }

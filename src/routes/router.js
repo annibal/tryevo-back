@@ -92,6 +92,10 @@ app.post(
   "/api/auth/forgot-password-send-code",
   routeWrapper(authController.forgotPasswordSendCode)
 );
+app.post(
+  "/api/auth/forgot-password-reset-with-code",
+  routeWrapper(authController.forgotPasswordResetWithCode)
+);
 
 // =====================
 // Personal Data

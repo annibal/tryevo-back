@@ -154,26 +154,24 @@ exports.setContratado = async (req, res) => {
   }
   if (vaga.active === false) throw new Error("Vaga inativa não pode contratar");
 
-  // throw new Error("temp err");
+  proposta = await PropostaModel.findByIdAndUpdate(
+    id,
+    { ...proposta, contratou: true },
+    { new: true, runValidators: true }
+  );
+  if (!proposta) throw new Error("Erro ao registrar proposta como contratada");
 
-  // proposta = await PropostaModel.findByIdAndUpdate(
-  //   id,
-  //   { ...proposta, contratou: true },
-  //   { new: true, runValidators: true }
-  // );
-  // if (!proposta) throw new Error("Erro ao registrar proposta como contratada");
-
-  // await VagaModel.findByIdAndUpdate(
-  //   proposta.vagaId,
-  //   {
-  //     contratou: proposta.candidatoId,
-  //     active: false,
-  //   },
-  //   {
-  //     new: true,
-  //     runValidators: true,
-  //   }
-  // );
+  await VagaModel.findByIdAndUpdate(
+    proposta.vagaId,
+    {
+      contratou: proposta.candidatoId,
+      active: false,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
 
   const todasPropostas = await PropostaModel.find({
     vagaId: proposta.vagaId,
