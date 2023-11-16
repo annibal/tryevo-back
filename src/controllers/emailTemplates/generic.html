@@ -1,5 +1,5 @@
 <table
-  class="tryevo-email-candidato-contratado"
+  class="tryevo-email-password-changed"
   cellspacing="0"
   cellpadding="0"
   dir="ltr"
@@ -9,6 +9,7 @@
 >
   <tbody>
     <tr>
+
       <td>
         <h1
           style="
@@ -20,14 +21,14 @@
             margin: 0;
           "
         >
-          <strong>Você foi Contratado!</strong>
+          <strong>TITULO</strong>
         </h1>
       </td>
     </tr>
     <tr>
       <td height="20" style="line-height: 20px; min-height: 20px"></td>
     </tr>
-
+    
     <tr>
       <td>
         <p
@@ -40,30 +41,9 @@
             font-weight: normal;
           "
         >
-          Parabéns, {$candidatoNome}!
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td height="20" style="line-height: 20px; min-height: 20px"></td>
-    </tr>
-
-    <tr>
-      <td>
-        <p
-          style="
-            font-family: 'Poppins', sans-serif;
-            color: #212121;
-            font-size: 16px;
-            line-height: 150%;
-            margin: 0;
-            font-weight: normal;
-          "
-        >
-          Se já não sabia, a empresa <strong>{$empresaNome}</strong> decidiu que
-          você é o candidato ideal para a vaga
+          TEXTO
           <a
-            href="https://app.tryevo.com.br/app/vagas/{$vagaId}/"
+            href="LINK_URL"
             style="
               font-family: 'Poppins', sans-serif;
               color: #02617d;
@@ -71,61 +51,27 @@
             "
             target="_blank"
           >
-            <strong>{$vagaNome}</strong>
+            LINK_TEXT
           </a>
-          e acabou de confirmar para a TryEvo que você foi contratado.
+          TEXTO
+          <a
+            href="LINK_URL"
+            style="
+              font-family: 'Poppins', sans-serif;
+              color: #02617d;
+              text-decoration: none;
+            "
+            target="_blank"
+          >
+            LINK_TEXT
+          </a>
         </p>
       </td>
     </tr>
     <tr>
       <td height="20" style="line-height: 20px; min-height: 20px"></td>
     </tr>
-
-    <tr>
-      <td>
-        <p
-          style="
-            font-family: 'Poppins', sans-serif;
-            color: #212121;
-            font-size: 16px;
-            line-height: 150%;
-            margin: 0;
-            font-weight: normal;
-          "
-        >
-          Também avisamos os outros {$countOutrosCandidatos} candidatos que a
-          vaga já foi preenchida :)
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td height="20" style="line-height: 20px; min-height: 20px"></td>
-    </tr>
-
-    <tr>
-      <td>
-        <p
-          style="
-            font-family: 'Poppins', sans-serif;
-            color: #212121;
-            font-size: 16px;
-            line-height: 150%;
-            margin: 0;
-            font-weight: normal;
-          "
-        >
-          Caso necessário, entre em contato com a empresa para combinar os
-          próximos passos:<br />
-          <div style="margin: 20px 0 0 20px; color:#3c3c3c">
-            {$contatoEmpresa}
-          </div>
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td height="20" style="line-height: 20px; min-height: 20px"></td>
-    </tr>
-
+    
     <tr>
       <td>
         <h2
@@ -138,12 +84,47 @@
             margin: 0;
           "
         >
-          <strong>Boa sorte na sua Jornada!</strong>
+          <strong>SUBTITULO</strong>
         </h2>
       </td>
     </tr>
     <tr>
       <td height="20" style="line-height: 20px; min-height: 20px"></td>
+    </tr>
+
+
+    <tr>
+      <td height="40" style="line-height: 40px; min-height: 40px"></td>
+    </tr>
+    <tr>
+      <td>
+        <a
+          href="https://app.tryevo.com.br/LINK"
+          style="
+            background-color: #02617d;
+            color: #ffffff;
+            border-radius: 4px;
+            display: inline-block;
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            font-style: normal;
+            text-decoration: none;
+            line-height: 175%;
+            padding: 10px 20px;
+            text-align: center;
+            width: 150px;
+            letter-spacing: 1px;
+            box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12);
+          "
+          target="_blank"
+        >
+          BOTAO
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td height="40" style="line-height: 40px; min-height: 40px"></td>
     </tr>
 
     <tr>
@@ -159,9 +140,9 @@
             margin-bottom: 0;
           "
         >
-          Esperamos que dê tudo certo com sua nova vaga. Se precisar, aqui está
+          Se não foi você que fez isso, entre em contato conosco:&nbsp;
           <a
-            href="https://app.tryevo.com.br/app/pf/candidaturas/{$candidaturaId}"
+            href="mailto:contato@tryevo.com.br"
             style="
               font-family: 'Poppins', sans-serif;
               color: #02617d;
@@ -169,7 +150,7 @@
             "
             target="_blank"
           >
-            a candidatura que você fez.
+            contato@tryevo.com.br
           </a>
         </p>
       </td>

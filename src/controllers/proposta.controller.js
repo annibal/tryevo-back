@@ -239,7 +239,7 @@ exports.setContratado = async (req, res) => {
           const tipo = capitalize(link.tipo);
           const valor = formatTelefone(link.valor);
           const style =
-            "font: inherit; text-decoration: inherit; color: inherit;";
+            "font: inherit; text-decoration: inherit; color: #02617d;";
           dadosContato.push(
             `<a href="${valor}" style="${style}" target="_blank">${tipo}: ${valor}</a>`
           );
