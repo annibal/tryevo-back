@@ -8,6 +8,7 @@ const PlanoAssinatura = SchemaFactory({
   preco: { type: Number, default: 0 },
   descontoAnual: { type: Number, default: 0 },
   tipo: { type: String, required: true, enum: Object.values(TIPO_PLANO_ASSINATURA) },
+  defaultForTipo: { type: Boolean, default: false },
   features: {
     type: [
       { key: { type: String, required: true, enum: Object.values(TIPO_FEATURE_PLANO_ASSINATURA)} },

@@ -54,6 +54,9 @@ const tipoFeatureValorCheck = (tipoValor, valorFeature) => {
 
 // controller methods
 
+// id "1,2,3"
+// tipo "PF"|"PJ"|"MA"
+// active "true"|"false"
 async function listPlanosAssinatura(paramSearch) {
   const search = {};
   if (paramSearch.id) {
@@ -81,6 +84,34 @@ async function listPlanosAssinatura(paramSearch) {
     },
   };
 }
+async function showDefaultPlanoAssinatura(tipo) {
+  if (!tiposPlanAss.includes(tipo)) {
+    throw new Error(
+      `Falha ao buscar plano padrão para o tipo "${tipo}": tipo não existe`
+    );
+  }
+
+  return await await PlanAssModel.findOne({
+    tipo: tipo,
+    defaultForTipo: true,
+    active: true,
+  }).exec();
+}
+async function makePlanosAssinaturaNotDefault(tipo) {
+  if (!tiposPlanAss.includes(tipo)) {
+    throw new Error(
+      `Falha ao atualizar planos do "${tipo}" para não-default: tipo não existe`
+    );
+  }
+
+  const undefaultedPlanos = await PlanAssModel.updateMany(
+    { tipo: tipo, defaultForTipo: true },
+    { defaultForTipo: false },
+    { new: true, runValidators: true }
+  );
+
+  console.info(`\nAtualizou ${undefaultedPlanos.length} para não padrão\n`);
+}
 async function showPlanoAssinatura(id) {
   return await PlanAssModel.findById(id);
 }
@@ -91,6 +122,9 @@ async function listFeatures(tipo) {
   return { data: TIPO_FEATURE_VALOR };
 }
 
+// nome, tipo
+// id?, defaultForTipo?, descricao?, active?, preco?, descontoAnual?
+// features?: [ { key: "", value: true | 123 } ]
 async function savePlanoAssinatura(paramData) {
   const planAssData = {};
   if (paramData.nome) {
@@ -99,8 +133,14 @@ async function savePlanoAssinatura(paramData) {
   if (paramData.descricao) {
     planAssData.descricao = paramData.descricao;
   }
-  if (paramData.tipo && tiposPlanAss.includes(paramData.tipo)) {
-    planAssData.tipo = paramData.tipo;
+  if (paramData.tipo) {
+    if (tiposPlanAss.includes(paramData.tipo)) {
+      planAssData.tipo = paramData.tipo;
+    } else {
+      throw new Error(
+        `Tipo de plano de assinatura "${paramData.tipo}" inválido`
+      );
+    }
   }
   if (paramData.active) {
     planAssData.active = !!paramData.active;
@@ -137,8 +177,37 @@ async function savePlanoAssinatura(paramData) {
     }
   }
 
+  if (paramData.defaultForTipo) {
+    if (!planAssData.active) {
+      throw new Error(
+        `Falha ao salvar plano de assinatura: Plano padrão para o tipo "${paramData.tipo}" deve estar ativo`
+      );
+    }
+
+    await makePlanosAssinaturaNotDefault(planAssData.tipo);
+    planAssData.defaultForTipo = true;
+  }
+
   if (paramData.id) {
     planAssData._id = paramData.id;
+
+    if (!paramData.defaultForTipo) {
+      const otherDefaultPlanAss = await PlanAssModel.countDocuments({
+        tipo: planAssData.tipo,
+        defaultForTipo: true,
+        _id: { $ne: planAssData._id },
+      });
+      if (otherDefaultPlanAss < 1) {
+        throw new Error(
+          [
+            `Falha ao atualizar plano de assinatura: Nenhum outro plano padrão`,
+            `para o tipo "${planAssData.tipo}" encontrado, e este plano seria`,
+            `salvo como não-padrão - é obrigatório pelo menos um plano padrão para cada tipo.`,
+          ].join(" ")
+        );
+      }
+    }
+
     return await PlanAssModel.findByIdAndUpdate(paramData.id, planAssData, {
       new: true,
       runValidators: true,
@@ -217,6 +286,7 @@ module.exports = {
   TIPO_FEATURE_VALOR,
   tipoFeatureValorCheck,
 
+  showDefaultPlanoAssinatura,
   listPlanosAssinatura,
   showPlanoAssinatura,
   listFeatures,
@@ -230,4 +300,4 @@ module.exports = {
   handleGetSingle,
   handleDelete,
   handlePost,
-}
+};
