@@ -13,6 +13,7 @@ const cboController = require("../controllers/cbo.controller");
 const habilidadeController = require("../controllers/habilidade.controller");
 const qualificacaoController = require("../controllers/qualificacao.controller");
 const propostaController = require("../controllers/proposta.controller");
+const planAssController = require("../controllers/plano-assinatura.controller");
 
 // =====================
 // Healthcheck
@@ -98,6 +99,34 @@ app.post(
 );
 
 // =====================
+// Subscription Plans
+// =====================
+
+app.get(
+  "/api/legacy-update-users/",
+  routeWrapper(planAssController.legacyUpdateUsers)
+);
+app.get(
+  "/api/features-planos-assinatura/",
+  routeWrapper(planAssController.handleGetFeatures)
+);
+app.get("/api/planos-assinatura/", routeWrapper(planAssController.handleGet));
+app.get(
+  "/api/plano-assinatura/:id",
+  routeWrapper(planAssController.handleGetSingle)
+);
+app.post(
+  "/api/plano-assinatura/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(planAssController.handlePost)
+);
+app.delete(
+  "/api/plano-assinatura/:id",
+  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  routeWrapper(planAssController.handleDelete)
+);
+
+// =====================
 // Personal Data
 // =====================
 
@@ -174,7 +203,11 @@ app.post(
 // =====================
 
 app.get("/api/qualificacao", routeWrapper(qualificacaoController.list));
-app.post("/api/qualificacao", guard(), routeWrapper(qualificacaoController.create));
+app.post(
+  "/api/qualificacao",
+  guard(),
+  routeWrapper(qualificacaoController.create)
+);
 app.post(
   "/api/qualificacao/:id",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
@@ -201,7 +234,11 @@ app.delete(
 // =====================
 
 app.get("/api/vagas", withUsuario, routeWrapper(vagaController.list));
-app.get("/api/vagas-salvas", guard([]), routeWrapper(vagaController.listSalvadas));
+app.get(
+  "/api/vagas-salvas",
+  guard([]),
+  routeWrapper(vagaController.listSalvadas)
+);
 app.get("/api/vaga/:id", withUsuario, routeWrapper(vagaController.show));
 app.get(
   "/api/minhas-vagas",

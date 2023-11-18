@@ -244,7 +244,7 @@ exports.setContratado = async (req, res) => {
         });
 
         if (dadosContato.length == 0) {
-          dadosContato = [empresaNome, "Sem dados de contato"]
+          dadosContato = [empresaNome, "Sem dados de contato"];
         }
         paramsEmail.params.contatoEmpresa = dadosContato.join("<br />\n");
       }
@@ -362,10 +362,13 @@ exports.listPF = async (req, res) => {
   const vagas = vagasResponse?.data || [];
   // console.log("\n\n\n\n", vagaIds, vagasResponse.meta, "\n\n\n\n");
 
-  const data = (propostas || []).map((proposta) => ({
-    ...proposta,
-    vaga: vagas.find((v) => v._id === proposta.vagaId),
-  }));
+  const data = (propostas || []).map((proposta) => {
+    const r = {
+      ...proposta,
+      vaga: vagas.find((v) => v._id === proposta.vagaId),
+    };
+    return r;
+  });
 
   return {
     data,
