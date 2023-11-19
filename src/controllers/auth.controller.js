@@ -25,15 +25,27 @@ const comparePassword = async (a, b) => {
   return isHashEqual;
 };
 
-const getAuthResponse = (usuarioObj) => {
+const getAuthResponse = (usuarioObj, withToken = true) => {
+  const objPlano = {
+    _id: usuarioObj.plano?._id || usuarioObj.plano,
+    nome: usuarioObj.plano?.nome,
+    tipo: usuarioObj.plano?.tipo,
+    features: (usuarioObj.plano?.features || []).reduce((all, feat) => ({
+      ...all,
+      [feat.chave]: feat.valor
+    }), {})
+  }
+
   const data = {
     _id: usuarioObj._id,
     email: usuarioObj.email,
-    plano: usuarioObj.plano,
+    plano: objPlano,
   };
-  data.token = jwt.sign(data, config.jwtSecret, {
-    expiresIn: 2629800, // 3hrs in sec
-  });
+  if (withToken) {
+    data.token = jwt.sign(data, config.jwtSecret, {
+      expiresIn: 2629800, // 3hrs in sec
+    });
+  }
   return data;
 };
 
@@ -42,11 +54,18 @@ exports.login = async (req, res) => {
   if (!senha) throw new Error("Senha não informada");
   if (!email) throw new Error("Email não informado");
 
-  const usuarioObj = await UsuarioModel.findOne({ email });
+  const usuarioObj = await UsuarioModel.findOne({ email }).lean();
   if (!usuarioObj) throw new Error("Usuario não encontrado");
 
   const isSenhaOk = await comparePassword(senha, usuarioObj.senha);
   if (!isSenhaOk) throw new Error("Senha inválida");
+  
+  const objPlanAss = await showPlanoAssinatura(usuarioObj.plano);
+  if (objPlanAss) {
+    usuarioObj.plano = objPlanAss
+  } else {
+    throw new Error("Plano de Assinatura inválido")
+  }
 
   return getAuthResponse(usuarioObj);
 };
@@ -59,8 +78,21 @@ exports.register = async (req, res) => {
     _id: id6(),
     email,
     senha: hashSenha,
-    plano: isEmpresa ? USUARIO_PLANOS.PJ_FREE : USUARIO_PLANOS.PF_FREE,
   };
+
+  if (isEmpresa) {
+    const objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PJ);
+    if (!objPlanAss) {
+      throw new Error("Nenhum plano de assinatura Padrão para Empresas cadastrado");
+    }
+    data.plano = objPlanAss._id
+  } else {
+    const objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PF);
+    if (!objPlanAss) {
+      throw new Error("Nenhum plano de assinatura Padrão para Candidatos cadastrado");
+    }
+    data.plano = objPlanAss._id
+  }
 
   const usuarioObj = await UsuarioModel.create(data);
   if (!usuarioObj) throw new Error("Erro ao criar usuário");
@@ -155,7 +187,7 @@ exports.getSelf = async (req, res) => {
     data.plano = objPlanAss
   }
   
-  return data;
+  return getAuthResponse(data, false);
 };
 
 exports.deleteSelf = async (req, res) => {

@@ -13,6 +13,7 @@ const {
   TIPO_CONTRATO,
   TIPO_MODELO_CONTRATO,
   TIPO_JORNADA,
+  TIPO_PLANO_ASSINATURA,
 } = require("../schemas/enums");
 
 const tiposTelefone = Object.values(TIPO_TELEFONE);
@@ -100,12 +101,17 @@ exports.getSelf = async (req, res) => {
   const { _id, plano } = req.usuario || {};
   if (!_id) throw new Error("Usuário não encontrado na sessão");
 
-  if (plano.startsWith("PJ")) {
+  if (plano?.tipo === TIPO_PLANO_ASSINATURA.PJ) {
     const dados = await PJModel.findById(_id).lean();
     return dados;
-  } else {
+  }
+  if (plano?.tipo === TIPO_PLANO_ASSINATURA.PF) {
     return await this.showPF({ ...req, params: { id: _id } });
   }
+  if (plano?.tipo === TIPO_PLANO_ASSINATURA.MA) {
+    return { masterAdmin: true };
+  }
+  throw new Error("Plano inválido")
 };
 
 exports.getById = async (req, res) => {
@@ -119,7 +125,9 @@ exports.getById = async (req, res) => {
 
 exports.setVagaSalva = async (req, res) => {
   const { _id, plano } = req.usuario || {};
-  if (!plano.startsWith("PF")) throw new Error("Usuário não é PF");
+  if (plano?.tipo !== TIPO_PLANO_ASSINATURA.PF) {
+    throw new Error("Usuário não é PF");
+  }
 
   if (!_id) throw new Error("Usuário não encontrado na sessão");
 
@@ -152,7 +160,9 @@ exports.setVagaSalva = async (req, res) => {
 exports.postPF = async (req, res) => {
   const { _id, plano } = req.usuario || {};
   if (!_id) throw new Error("Usuário não encontrado na sessão");
-  if (!plano.startsWith("PF")) throw new Error("Usuário não é PF");
+  if (plano?.tipo !== TIPO_PLANO_ASSINATURA.PF) {
+    throw new Error("Usuário não é PF");
+  }
 
   const data = { _id };
   if (req.body.nomePrimeiro) data.nomePrimeiro = req.body.nomePrimeiro;
@@ -518,7 +528,9 @@ exports.postPF = async (req, res) => {
 exports.postPJ = async (req, res) => {
   const { _id, plano } = req.usuario || {};
   if (!_id) throw new Error("Usuário não encontrado na sessão");
-  if (!plano.startsWith("PJ")) throw new Error("Usuário não é PJ");
+  if (plano?.tipo !== TIPO_PLANO_ASSINATURA.PJ) {
+    throw new Error("Usuário não é PJ");
+  }
 
   const data = { _id };
   if (req.body.nomeResponsavel) data.nomeResponsavel = req.body.nomeResponsavel;

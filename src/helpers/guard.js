@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config");
-const { USUARIO_PLANOS } = require("../schemas/enums");
+const { TIPO_FEATURE_PLANO_ASSINATURA: FEATS } = require("../schemas/enums");
 
 const getToken = (req) => {
   let str = req?.headers?.authorization;
@@ -12,20 +12,30 @@ const getToken = (req) => {
   return str;
 };
 
+const parseUser = (decodedToken) => {
+  const plano = {
+    _id: decodedToken.plano?._id,
+    nome: decodedToken.plano?.nome,
+    tipo: decodedToken.plano?.tipo,
+    features: decodedToken.plano?.features || {},
+  };
+
+  return {
+    _id: decodedToken._id,
+    email: decodedToken.email,
+    plano,
+    createdAt: decodedToken.createdAt,
+    updatedAt: decodedToken.updatedAt,
+  };
+};
+
 const withUsuario = (req, res, next) => {
   const token = getToken(req);
   req.usuario = {};
   if (token) {
     jwt.verify(token, config.jwtSecret, (error, decodedToken) => {
       if (!error) {
-        req.usuario = {
-          _id: decodedToken._id,
-          email: decodedToken.email,
-          plano: decodedToken.plano,
-          isMasterAdmin: decodedToken.plano === USUARIO_PLANOS.MASTER_ADMIN,
-          createdAt: decodedToken.createdAt,
-          updatedAt: decodedToken.updatedAt,
-        };
+        req.usuario = parseUser(decodedToken);
       }
     });
   }
@@ -33,7 +43,7 @@ const withUsuario = (req, res, next) => {
 };
 
 const guard =
-  (planos = []) =>
+  (tipos = [], features = []) =>
   (req, res, next) => {
     const token = getToken(req);
     if (token) {
@@ -41,25 +51,36 @@ const guard =
         if (error) {
           return res.status(401).send({ message: "Not authorized", error });
         } else {
-          let isAuthorized = !planos || planos.length < 1 || planos.includes(decodedToken.plano);
-          const isMasterAdmin = decodedToken.plano === USUARIO_PLANOS.MASTER_ADMIN;
-          if (isMasterAdmin) isAuthorized = true;
+          const user = parseUser(decodedToken);
+
+          let isAuthorized = true;
+
+          if (tipos?.length > 0) {
+            if (!tipos.includes(user.plano.tipo)) {
+              isAuthorized = false;
+            }
+          }
+
+          if (features?.length > 0) {
+            for (let i = 0; i < features.length; i++) {
+              if (!user.plano.features[features[i]]) {
+                isAuthorized = false;
+                break;
+              }
+            }
+          }
+
+          if (user.plano.features[FEATS.ADMIN]) {
+            isAuthorized = true;
+          }
+
           if (isAuthorized) {
-            req.usuario = {
-              _id: decodedToken._id,
-              email: decodedToken.email,
-              plano: decodedToken.plano,
-              isMasterAdmin,
-              createdAt: decodedToken.createdAt,
-              updatedAt: decodedToken.updatedAt,
-            };
+            req.usuario = user;
             next();
           } else {
-            return res
-              .status(401)
-              .send({
-                message: `Not authorized for access level "${decodedToken.plano}"`,
-              });
+            return res.status(401).send({
+              message: `Not authorized for access level "${decodedToken.plano.tipo} - ${decodedToken.plano.nome}"`,
+            });
           }
         }
       });

@@ -489,7 +489,9 @@ exports.listMine = async (req, res) => {
 
 exports.listSalvadas = async (req, res) => {
   const { _id, plano } = req.usuario || {};
-  if (!plano.startsWith("PF")) throw new Error("Usuário não é PF");
+  if (plano?.tipo !== TIPO_PLANO_ASSINATURA.PF) {
+    throw new Error("Usuário não é PF");
+  }
 
   if (!_id) throw new Error("Usuário não encontrado na sessão");
 
