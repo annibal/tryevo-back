@@ -251,17 +251,17 @@ async function legacyUpdateUsers() {
   const defaultPF = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PF)
   const defaultPJ = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PJ)
   
-  await UsuarioModel.updateMany({ plano: defaultPF._id }, { plano: { $in: [
+  await UsuarioModel.updateMany({ plano: { $in: [
     "PF_FREE",
     "PF_SMART",
     "PF_PREMIUM",
-  ] }})
-  await UsuarioModel.updateMany({ plano: defaultPJ._id }, { plano: { $in: [
+  ] }}, { plano: defaultPF._id })
+  await UsuarioModel.updateMany({ plano: { $in: [
     "PJ_FREE",
     "PJ_SMART",
     "PJ_PREMIUM",
     "PJ_ENTERPRISE",
-  ] }})
+  ] }}, { plano: defaultPJ._id })
 
   return true;
 }

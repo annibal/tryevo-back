@@ -283,7 +283,6 @@ exports.allUsers = async (req, res) => {
   const planosAss = await listPlanosAssinatura();
   data = data.map(user => {
     const planAss = planosAss.data.find(p => p._id == user.plano);
-    console.log(planAss)
     if (planAss) {
       return {
         ...user,

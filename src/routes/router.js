@@ -103,10 +103,6 @@ app.post(
 // =====================
 
 app.get(
-  "/api/legacy-update-users/",
-  routeWrapper(planAssController.legacyUpdateUsers)
-);
-app.get(
   "/api/features-planos-assinatura/",
   routeWrapper(planAssController.handleGetFeatures)
 );
