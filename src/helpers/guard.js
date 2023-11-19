@@ -24,6 +24,7 @@ const parseUser = (decodedToken) => {
     _id: decodedToken._id,
     email: decodedToken.email,
     plano,
+    isMasterAdmin: !!plano.features[FEATS.ADMIN],
     createdAt: decodedToken.createdAt,
     updatedAt: decodedToken.updatedAt,
   };
@@ -70,7 +71,7 @@ const guard =
             }
           }
 
-          if (user.plano.features[FEATS.ADMIN]) {
+          if (user.isMasterAdmin) {
             isAuthorized = true;
           }
 

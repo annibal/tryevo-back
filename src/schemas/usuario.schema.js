@@ -1,5 +1,4 @@
 const SchemaFactory = require("./base.schema");
-const { USUARIO_PLANOS } = require("./enums");
 
 const UsuarioSchema = SchemaFactory({
   email: { type: String, required: true, unique: true },

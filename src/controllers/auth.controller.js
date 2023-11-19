@@ -3,7 +3,7 @@ const config = require("../config");
 const jwt = require("jsonwebtoken");
 const id6 = require("../helpers/id6");
 const mongoose = require("mongoose");
-const { USUARIO_PLANOS, TIPO_PLANO_ASSINATURA } = require("../schemas/enums");
+const { TIPO_PLANO_ASSINATURA } = require("../schemas/enums");
 
 const UsuarioSchema = require("../schemas/usuario.schema");
 const PFSchema = require("../schemas/pf.schema");
@@ -80,14 +80,15 @@ exports.register = async (req, res) => {
     senha: hashSenha,
   };
 
+  let objPlanAss;
   if (isEmpresa) {
-    const objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PJ);
+    objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PJ);
     if (!objPlanAss) {
       throw new Error("Nenhum plano de assinatura Padrão para Empresas cadastrado");
     }
     data.plano = objPlanAss._id
   } else {
-    const objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PF);
+    objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PF);
     if (!objPlanAss) {
       throw new Error("Nenhum plano de assinatura Padrão para Candidatos cadastrado");
     }
@@ -99,7 +100,7 @@ exports.register = async (req, res) => {
 
   await sendEmail({ email, name: email, type: EMAIL_TYPES.NEW_SIGNUP });
 
-  return getAuthResponse(usuarioObj);
+  return getAuthResponse({ ...data, plano: objPlanAss });
 };
 
 exports.updatePlano = async (req, res) => {

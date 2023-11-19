@@ -5,7 +5,7 @@ const { guard, withUsuario } = require("../helpers/guard");
 const routeWrapper = require("../helpers/routeWrapper");
 
 const enums = require("../schemas/enums");
-const { USUARIO_PLANOS } = enums;
+const { TIPO_PLANO_ASSINATURA: T_PLAN } = enums;
 const authController = require("../controllers/auth.controller");
 const infoController = require("../controllers/info.controller");
 const vagaController = require("../controllers/vaga.controller");
@@ -40,12 +40,12 @@ app.post("/api/auth/register", routeWrapper(authController.register));
 app.delete("/api/auth/self", guard(), routeWrapper(authController.deleteSelf));
 app.post(
   "/api/auth/update-plano",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(authController.updatePlano)
 );
 app.post(
   "/api/auth/change-user-password",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(authController.changeUserPassword)
 );
 app.get(
@@ -66,12 +66,12 @@ app.post(
 app.get("/api/auth/self", guard(), routeWrapper(authController.getSelf));
 app.get(
   "/api/auth/users",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(authController.allUsers)
 );
 app.get(
   "/api/auth/user/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(authController.getSingleUser)
 );
 app.post(
@@ -121,12 +121,12 @@ app.get(
 );
 app.post(
   "/api/plano-assinatura",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(planAssController.handlePost)
 );
 app.delete(
   "/api/plano-assinatura/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(planAssController.handleDelete)
 );
 
@@ -137,7 +137,7 @@ app.delete(
 app.get("/api/info/self", guard(), routeWrapper(infoController.getSelf));
 app.get(
   "/api/info/other/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(infoController.getById)
 );
 app.post("/api/info/pf", guard(), routeWrapper(infoController.postPF));
@@ -154,29 +154,25 @@ app.post(
 
 app.get("/api/cbo", routeWrapper(cboController.list));
 app.post("/api/cbo", guard(), routeWrapper(cboController.create));
-app.post(
-  "/api/cbo/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
-  routeWrapper(cboController.edit)
-);
+app.post("/api/cbo/:id", guard([T_PLAN.MA]), routeWrapper(cboController.edit));
 app.get(
   "/api/cbo/validate/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(cboController.validate)
 );
 app.get(
   "/api/cbo/invalidate/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(cboController.invalidate)
 );
 app.delete(
   "/api/cbo/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(cboController.delete)
 );
 app.post(
   "/api/cbo-import",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(cboController.doImport)
 );
 
@@ -188,17 +184,17 @@ app.get("/api/habilidade", routeWrapper(habilidadeController.list));
 app.post("/api/habilidade", guard(), routeWrapper(habilidadeController.create));
 app.post(
   "/api/habilidade/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(habilidadeController.edit)
 );
 app.delete(
   "/api/habilidade/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(habilidadeController.delete)
 );
 app.post(
   "/api/habilidade-import",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(habilidadeController.doImport)
 );
 
@@ -214,17 +210,17 @@ app.post(
 );
 app.post(
   "/api/qualificacao/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(qualificacaoController.update)
 );
 app.get(
   "/api/qualificacao/validate/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(qualificacaoController.validate)
 );
 app.get(
   "/api/qualificacao/invalidate/:id",
-  guard([USUARIO_PLANOS.MASTER_ADMIN]),
+  guard([T_PLAN.MA]),
   routeWrapper(qualificacaoController.invalidate)
 );
 app.delete(
@@ -246,42 +242,18 @@ app.get(
 app.get("/api/vaga/:id", withUsuario, routeWrapper(vagaController.show));
 app.get(
   "/api/minhas-vagas",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
+  guard([T_PLAN.PJ]),
   routeWrapper(vagaController.listMine)
 );
-app.post(
-  "/api/vaga",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
-  routeWrapper(vagaController.save)
-);
+app.post("/api/vaga", guard([T_PLAN.PJ]), routeWrapper(vagaController.save));
 app.post(
   "/api/vaga/:id",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
+  guard([T_PLAN.PJ]),
   routeWrapper(vagaController.save)
 );
 app.delete(
   "/api/vaga/:id",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
+  guard([T_PLAN.PJ]),
   routeWrapper(vagaController.delete)
 );
 
@@ -291,79 +263,43 @@ app.delete(
 
 app.get(
   "/api/candidaturas",
-  guard([
-    USUARIO_PLANOS.PF_FREE,
-    USUARIO_PLANOS.PF_SMART,
-    USUARIO_PLANOS.PF_PREMIUM,
-  ]),
+  guard([T_PLAN.PF]),
   routeWrapper(propostaController.listPF)
 );
 app.get(
   "/api/candidatura/:id",
-  guard([
-    USUARIO_PLANOS.PF_FREE,
-    USUARIO_PLANOS.PF_SMART,
-    USUARIO_PLANOS.PF_PREMIUM,
-  ]),
+  guard([T_PLAN.PF]),
   routeWrapper(propostaController.show)
 );
 app.post(
   "/api/candidaturas",
-  guard([
-    USUARIO_PLANOS.PF_FREE,
-    USUARIO_PLANOS.PF_SMART,
-    USUARIO_PLANOS.PF_PREMIUM,
-  ]),
+  guard([T_PLAN.PF]),
   routeWrapper(propostaController.create)
 );
 app.delete(
   "/api/candidatura/:id",
-  guard([
-    USUARIO_PLANOS.PF_FREE,
-    USUARIO_PLANOS.PF_SMART,
-    USUARIO_PLANOS.PF_PREMIUM,
-  ]),
+  guard([T_PLAN.PF]),
   routeWrapper(propostaController.delete)
 );
 //
 app.get(
   "/api/propostas",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
+  guard([T_PLAN.PJ]),
   routeWrapper(propostaController.listPJ)
 );
 app.get(
   "/api/proposta/:id",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
+  guard([T_PLAN.PJ]),
   routeWrapper(propostaController.showPJ)
 );
 app.post(
   "/api/proposta/:id/ver-candidato",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
+  guard([T_PLAN.PJ]),
   routeWrapper(propostaController.verDados)
 );
 app.post(
   "/api/proposta/:id/set-contratado",
-  guard([
-    USUARIO_PLANOS.PJ_FREE,
-    USUARIO_PLANOS.PJ_PREMIUM,
-    USUARIO_PLANOS.PJ_SMART,
-    USUARIO_PLANOS.PJ_ENTERPRISE,
-  ]),
+  guard([T_PLAN.PJ]),
   routeWrapper(propostaController.setContratado)
 );
 

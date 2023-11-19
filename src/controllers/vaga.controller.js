@@ -10,6 +10,7 @@ const {
   TIPO_MODELO_CONTRATO,
   TIPO_CONTRATO,
   TIPO_JORNADA,
+  TIPO_PLANO_ASSINATURA,
 } = require("../schemas/enums");
 const tiposGenero = Object.values(TIPO_GENERO);
 const tiposFluenciaLinguagem = Object.values(FLUENCIA_LINGUAGEM);
@@ -436,6 +437,7 @@ exports.listMine = async (req, res) => {
     "tipoContrato",
     "qualificacoes",
     "habilidades",
+    "contratou",
   ];
 
   const total = await VagaModel.countDocuments(search);
@@ -470,6 +472,8 @@ exports.listMine = async (req, res) => {
         obj.cargo = objCargo.nome;
       }
     }
+
+    obj.contratou = !!vaga.contratou;
 
     return obj;
   });

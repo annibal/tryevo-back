@@ -171,6 +171,9 @@ exports.postPF = async (req, res) => {
   if (req.body.resumo) {
     data.resumo = req.body.resumo;
     data.resumoUnique = getMatchWords(req.body.resumo);
+    if (!data.resumoUnique) {
+      throw new Error("Resumo profissional precisa ser um pouco mais longo")
+    }
   }
   if (req.body.nacionalidade) data.nacionalidade = req.body.nacionalidade;
   if (req.body.nascimento) data.nascimento = parseDMYdate(req.body.nascimento);
