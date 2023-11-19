@@ -3,12 +3,13 @@ const config = require("../config");
 const jwt = require("jsonwebtoken");
 const id6 = require("../helpers/id6");
 const mongoose = require("mongoose");
-const { USUARIO_PLANOS } = require("../schemas/enums");
+const { USUARIO_PLANOS, TIPO_PLANO_ASSINATURA } = require("../schemas/enums");
 
 const UsuarioSchema = require("../schemas/usuario.schema");
 const PFSchema = require("../schemas/pf.schema");
 const PJSchema = require("../schemas/pj.schema");
 const { sendEmail, EMAIL_TYPES } = require("./sendEmail");
+const { showPlanoAssinatura, showDefaultPlanoAssinatura, listPlanosAssinatura } = require("./plano-assinatura.controller");
 
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
 const PFModel = mongoose.model("PF", PFSchema);
@@ -72,7 +73,8 @@ exports.register = async (req, res) => {
 exports.updatePlano = async (req, res) => {
   const { id, plano } = req.body;
 
-  if (!Object.values(USUARIO_PLANOS).includes(plano)) {
+  const objPlanAss = await showPlanoAssinatura(plano)
+  if (!objPlanAss) {
     throw new Error(`Plano inválido "${plano}"`);
   }
 
@@ -81,7 +83,7 @@ exports.updatePlano = async (req, res) => {
     { plano },
     { new: true, runValidators: true }
   );
-  if (!usuarioObj) throw new Error("Erro ao atualizar assinatura do usuário");
+  if (!usuarioObj) throw new Error("Erro ao atualizar o plano de assinatura do usuário");
 
   return getAuthResponse(usuarioObj);
 };
@@ -94,9 +96,14 @@ exports.elevate = async (req, res) => {
   if (masterpass !== "tryevo_master_password")
     throw new Error("Senha mestre errada");
 
+  const objPlanAssMA = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.MA);
+  if (objPlanAssMA) {
+    throw new Error("Plano de Assinatura padrão para Admin não encontrado")
+  }
+
   const usuarioObj = await UsuarioModel.findByIdAndUpdate(
     id,
-    { plano: USUARIO_PLANOS.MASTER_ADMIN },
+    { plano: objPlanAssMA._id },
     { new: true, runValidators: true }
   );
   if (!usuarioObj) throw new Error("Erro ao elevar usuário");
@@ -108,11 +115,16 @@ exports.changeAccountType = async (req, res) => {
   const id = req.usuario?._id;
   if (!id) throw new Error("Usuário não encontrado na sessão");
 
-  const { tipo } = req.body;
+  const tipo = req.body.tipo.toUpperCase();
+
   let plano = null;
-  if (tipo === "pf") plano = USUARIO_PLANOS.PF_FREE;
-  if (tipo === "pj") plano = USUARIO_PLANOS.PJ_FREE;
-  if (!tipo) {
+  if (tipo === "PF" || tipo === "PJ") {
+    const objPlanAss = await showDefaultPlanoAssinatura(tipo);
+    if (!objPlanAss) {
+      throw new Error(`Plano de Assinatura padrão para "${tipo}" não encontrado`)
+    }
+    plano = objPlanAss._id
+  } else {
     throw new Error(`Tipo inválido "${tipo}" ao alterar conta`);
   }
 
@@ -137,6 +149,12 @@ exports.getSelf = async (req, res) => {
     createdAt: usuario.createdAt,
     updatedAt: usuario.updatedAt,
   };
+  
+  const objPlanAss = await showPlanoAssinatura(usuario.plano);
+  if (objPlanAss) {
+    data.plano = objPlanAss
+  }
+  
   return data;
 };
 
@@ -199,7 +217,13 @@ exports.changeUserPassword = async (req, res) => {
 };
 
 exports.getSingleUser = async (req, res) => {
-  return await UsuarioModel.findById(req.params.id);
+  const data = await UsuarioModel.findById(req.params.id);
+
+  const objPlanAss = await showPlanoAssinatura(data?.plano);
+  if (data && objPlanAss) {
+    data.plano = objPlanAss
+  }
+  return data;
 };
 
 exports.allUsers = async (req, res) => {
@@ -220,7 +244,21 @@ exports.allUsers = async (req, res) => {
   let data = await UsuarioModel.find(search)
     .skip(from)
     .limit(to - from)
+    .lean()
     .exec();
+    
+  const planosAss = await listPlanosAssinatura();
+  data = data.map(user => {
+    const planAss = planosAss.data.find(p => p._id == user.plano);
+    console.log(planAss)
+    if (planAss) {
+      return {
+        ...user,
+        plano: planAss,
+      }
+    }
+    return user;
+  });
 
   return {
     data,

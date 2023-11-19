@@ -110,13 +110,17 @@ app.get(
   "/api/features-planos-assinatura/",
   routeWrapper(planAssController.handleGetFeatures)
 );
+app.get(
+  "/api/tipos-planos-assinatura/",
+  routeWrapper(planAssController.handleGetTipos)
+);
 app.get("/api/planos-assinatura/", routeWrapper(planAssController.handleGet));
 app.get(
   "/api/plano-assinatura/:id",
   routeWrapper(planAssController.handleGetSingle)
 );
 app.post(
-  "/api/plano-assinatura/:id",
+  "/api/plano-assinatura",
   guard([USUARIO_PLANOS.MASTER_ADMIN]),
   routeWrapper(planAssController.handlePost)
 );
