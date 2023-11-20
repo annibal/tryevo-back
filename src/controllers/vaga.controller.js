@@ -11,6 +11,7 @@ const {
   TIPO_CONTRATO,
   TIPO_JORNADA,
   TIPO_PLANO_ASSINATURA,
+  TIPO_FEATURE_PLANO_ASSINATURA: FEAT,
 } = require("../schemas/enums");
 const tiposGenero = Object.values(TIPO_GENERO);
 const tiposFluenciaLinguagem = Object.values(FLUENCIA_LINGUAGEM);
@@ -324,12 +325,31 @@ exports.save = async (req, res) => {
       runValidators: true,
     });
   } else {
+
+    const maxVagas = req.usuario.plano?.features[FEAT.LIMITE_VAGAS]
+    if (maxVagas) {
+      const countVagasCriadas = await VagaModel.countDocuments({
+        contratou: null,
+        ownerId: req.usuario._id,
+      });
+      if (countVagasCriadas >= maxVagas) {
+        throw new Error(`Falha ao criar vaga: limite máximo de ${maxVagas} vagas atingido`)
+      }
+    }
+
     data._id = id6();
     data.ownerId = req.usuario._id;
     data.active = true;
     return await VagaModel.create(data);
   }
 };
+
+exports.getCountMyVagasCriadas = async (req, res) => {
+  return await VagaModel.countDocuments({
+    contratou: null,
+    ownerId: req.usuario._id,
+  });
+}
 
 exports.delete = async (req, res) => {
   const id = req.params.id;
@@ -395,7 +415,12 @@ exports.show = async (req, res) => {
     vaga.matchDesc = matchObj.matchDesc;
   }
 
-  if (!vaga.ocultarEmpresa && !req.usuario.isMasterAdmin) {
+  let showEmpresa = true;
+  if (vaga.ocultarEmpresa) showEmpresa = false;
+  if (!req.usuario.plano?.features[FEAT.VER_NOME_EMPRESA]) showEmpresa = false;
+  if (req.usuario.isMasterAdmin) showEmpresa = true;
+
+  if (showEmpresa) {
     const empresa = await PJModel.findById(
       vaga.ownerId,
       "endereco nomeFantasia telefones links"
@@ -644,7 +669,8 @@ exports.list = async (req, res) => {
 
     let showEmpresa = true;
     if (vaga.ocultarEmpresa) showEmpresa = false;
-    if (req.usuario.isMasterAdmin) showEmpresa = true;
+    if (!req.usuario.plano?.features[FEAT.VER_NOME_EMPRESA]) showEmpresa = false;
+    if (req.usuario.isMasterAdmin) showEmpresa = true;  
     if (showEmpresa) {
       const objEmpresa = objEmpresas.find((x) => x._id === vaga.ownerId);
       if (objEmpresa) {

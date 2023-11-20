@@ -12,6 +12,7 @@ const UsuarioSchema = require("../schemas/usuario.schema");
 const { sendEmail, EMAIL_TYPES, sendBulkEmails } = require("./sendEmail");
 const capitalize = require("../helpers/capitalize");
 const formatTelefone = require("../helpers/formatTelefone");
+const { TIPO_FEATURE_PLANO_ASSINATURA: FEAT } = require("../schemas/enums");
 
 const PropostaModel = mongoose.model("Proposta", PropostaSchema);
 const VagaModel = mongoose.model("Vaga", VagaSchema);
@@ -19,7 +20,21 @@ const PFModel = mongoose.model("PF", PFSchema);
 const PJModel = mongoose.model("PJ", PJSchema);
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
 
+const getCountPropostas = async (req, res) => {
+  const search = { candidatoId: req.usuario._id, contratou: { $ne: true } };
+  const total = await PropostaModel.countDocuments(search);
+  return total
+};
+exports.getCountPropostas = getCountPropostas;
+
 exports.create = async (req, res) => {
+  const countPropostas = await getCountPropostas(req, res);
+  const maxPropostas = req.usuario.plano?.features[FEAT.LIMITE_CANDIDATURAS];
+  
+  if (countPropostas >= maxPropostas) {
+    throw new Error(`Falha ao criar candidatura: limite máximo de ${maxPropostas} candidaturas atingido`)
+  }
+
   const data = {
     _id: id6(),
     candidatoId: req.usuario._id,
@@ -91,6 +106,12 @@ exports.verDados = async (req, res) => {
   const id = req.params.id;
   let proposta = await PropostaModel.findById(id).lean();
   if (!proposta) throw new Error("Proposta não encontrada");
+
+  if (!req.usuario.plano?.features[FEAT.VER_DADOS_CANDIDATO]) {
+    throw new Error(
+      "Não autorizado: plano do usuário não permite visualizar dados do candidato"
+    );
+  }
 
   const candidato = await infoController.showPF({
     ...req,
@@ -292,6 +313,12 @@ exports.showPJ = async (req, res) => {
   const id = req.params.id;
   let proposta = await PropostaModel.findById(id).lean();
   if (!proposta) throw new Error("Proposta não encontrada");
+
+  if (!req.usuario.plano?.features[FEAT.VER_CV_FULL]) {
+    throw new Error(
+      "Não autorizado: plano do usuário não permite visualizar currículo completo do candidato"
+    );
+  }
 
   const vaga = await vagaController.show({
     ...req,

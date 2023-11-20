@@ -241,6 +241,11 @@ app.get(
   guard([T_PLAN.PJ]),
   routeWrapper(vagaController.listMine)
 );
+app.get(
+  "/api/count-minhas-vagas",
+  guard([T_PLAN.PJ]),
+  routeWrapper(vagaController.getCountMyVagasCriadas)
+);
 app.post("/api/vaga", guard([T_PLAN.PJ]), routeWrapper(vagaController.save));
 app.post(
   "/api/vaga/:id",
@@ -276,6 +281,11 @@ app.delete(
   "/api/candidatura/:id",
   guard([T_PLAN.PF]),
   routeWrapper(propostaController.delete)
+);
+app.get(
+  "/api/count-candidaturas",
+  guard([T_PLAN.PF]),
+  routeWrapper(propostaController.getCountPropostas)
 );
 //
 app.get(
