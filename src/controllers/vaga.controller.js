@@ -144,6 +144,9 @@ exports.save = async (req, res) => {
   if (req.body.descricao) {
     data.descricao = req.body.descricao;
     data.descUnique = getMatchWords(req.body.descricao);
+    if (!data.descUnique) {
+      throw new Error("Descrição da vaga precisa ser um pouco mais longa")
+    }
   }
 
   if (req.body.experiencia) data.experiencia = req.body.experiencia;
