@@ -14,6 +14,7 @@ const habilidadeController = require("../controllers/habilidade.controller");
 const qualificacaoController = require("../controllers/qualificacao.controller");
 const propostaController = require("../controllers/proposta.controller");
 const planAssController = require("../controllers/plano-assinatura.controller");
+const dashboardController = require("../controllers/dashboard.controller")
 
 // =====================
 // Healthcheck
@@ -307,6 +308,21 @@ app.post(
   "/api/proposta/:id/set-contratado",
   guard([T_PLAN.PJ]),
   routeWrapper(propostaController.setContratado)
+);
+
+// =====================
+// Graficos da Dashboard
+// =====================
+
+app.get(
+  "/api/dashboard/:type/:chart",
+  withUsuario,
+  routeWrapper(dashboardController.handleGetDashboardData)
+);
+app.post(
+  "/api/dashboard/:type/:chart",
+  withUsuario,
+  routeWrapper(dashboardController.handlePostDashboardData)
 );
 
 // =====================
