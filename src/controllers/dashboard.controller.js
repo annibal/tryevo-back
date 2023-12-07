@@ -3,6 +3,7 @@ const {
   TIPO_PLANO_ASSINATURA,
   TIPO_FEATURE_PLANO_ASSINATURA: FEAT,
 } = require("../schemas/enums");
+const aggregateData = require("../helpers/aggregateData");
 
 const UsuarioSchema = require("../schemas/usuario.schema");
 const PFSchema = require("../schemas/pf.schema");
@@ -12,6 +13,7 @@ const HabilidadeSchema = require("../schemas/habilidade.schema");
 const QualificacaoSchema = require("../schemas/qualificacao.schema");
 const VagaSchema = require("../schemas/vaga.schema");
 const PropostaSchema = require("../schemas/proposta.schema");
+const capitalize = require("../helpers/capitalize");
 
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
 const PFModel = mongoose.model("PF", PFSchema);
@@ -34,108 +36,602 @@ const genMockData = (n, min, max) =>
         name: x,
         value: Math.floor(Math.random() * max) + min,
       }));
+const mock = {
+  estados: ["SP", "RJ", "BA", "BH", "ES", "RS", "Mato Grosso do Sul"],
+  cidades: [
+    "Cidade",
+    "Outra Cidade",
+    "Cidadosa",
+    "Cidadela",
+    "City",
+    "Cidade Vila",
+    "Cidona",
+  ],
+  cargos: [
+    "Abacaxicultor",
+    "Gerente Administrativo",
+    "Auxiliar Administrativo",
+    "Diretor de Vendas",
+    "Coordenador Executivo",
+    "Coordenador de Mídias",
+    "Gerente Comercial",
+  ],
+  competencias: [
+    "Javascript",
+    "Excel",
+    "Análise",
+    "Gerência",
+    "CSS",
+    "MySQL",
+    "ABAP",
+  ],
+  habilidades: [
+    "Flexibilidade",
+    "Liderança",
+    "Trabalho em Equipe",
+    "Diagnóstico e Resolução de Problemas",
+    "Tomada de Decisões",
+    "Análise de Informação",
+    "Ferramentas de Organização e Produtividade",
+  ],
+};
 
-const dataVagasCompetencia = [
-  { name: "Javascript", value: 119889 },
-  { name: "Excel", value: 81722 },
-  { name: "Análise", value: 103426 },
-  { name: "Gerência", value: 57168 },
-  { name: "CSS", value: 106490 },
-  { name: "MySQL", value: 68938 },
-  { name: "ABAP", value: 65789 },
-];
-const dataVagasEstado = [
-  { name: "SP", value: 93876 },
-  { name: "RJ", value: 61559 },
-  { name: "BA", value: 101266 },
-  { name: "BH", value: 78323 },
-  { name: "ES", value: 97901 },
-  { name: "RS", value: 69897 },
-  { name: "RN", value: 74242 },
-];
-const dataEvoCandidaturas = [
-  { time: "2023-01-01", candidaturas: 0, contratacoes: 0 },
-  { time: "2023-02-01", candidaturas: 0, contratacoes: 0 },
-  { time: "2023-03-01", candidaturas: 12, contratacoes: 1 },
-  { time: "2023-04-01", candidaturas: 11, contratacoes: 0 },
-  { time: "2023-05-01", candidaturas: 53, contratacoes: 32 },
-  { time: "2023-06-01", candidaturas: 0, contratacoes: 15 },
-  { time: "2023-07-01", candidaturas: 22, contratacoes: 7 },
-  { time: "2023-08-01", candidaturas: 102, contratacoes: 65 },
-  { time: "2023-09-01", candidaturas: 63, contratacoes: 42 },
-  { time: "2023-10-01", candidaturas: 96, contratacoes: 78 },
-  { time: "2023-11-01", candidaturas: 73, contratacoes: 15 },
-  { time: "2023-12-01", candidaturas: 114, contratacoes: 67 },
-];
+const fillTimeBuckets = (dataObj, limit) => {
+  let sum = 0;
+  const dataBuckets = Array(limit)
+    .fill()
+    .map((_, i) => {
+      dt = new Date();
+      dt.setDate(1);
+      dt.setMonth(dt.getMonth() - limit + i + 1);
+      const time = dt.toJSON().slice(0, 8) + "01";
+      sum += dataObj[time] || 0;
+      return { time, value: sum };
+    });
+  //
+  return dataBuckets;
+};
+
+const fromAggToTimeValue = (aggObj) =>
+  (aggObj || []).reduce((all, curr) => {
+    const time = [
+      curr._id.year,
+      (curr._id.month + 1).toString().padStart(2, "0"),
+      "01",
+    ].join("-");
+
+    return {
+      ...all,
+      [time]: curr.count,
+    };
+  }, {});
+
+const withLookup = async (data, joinModel, localField, foreignField, as) => {
+  const ids = Array.from(
+    new Set((data || []).map((item) => item[localField]).filter((x) => x))
+  );
+  let objJoins = [];
+  if (ids.length > 0) {
+    objJoins = await joinModel
+      .find({
+        _id: { $in: ids },
+      })
+      .lean();
+  }
+
+  const result = (data || []).map((item) => {
+    const lookedUpObj = objJoins.find(
+      (x) => x[foreignField] === item[localField]
+    );
+    return {
+      ...item,
+      [as]: lookedUpObj,
+    };
+  });
+
+  return result;
+};
 
 const featureFns = {
   // PF
   [FEAT.VER_G_VAGAS_REGIAO]: async function (params) {
-    const items = params.estado
-      ? [
-          "Cidade",
-          "Outra Cidade",
-          "Cidadosa",
-          "Cidadela",
-          "City",
-          "Cidade Vila",
-          "Cidona",
-        ]
-      : ["SP", "RJ", "BA", "BH", "ES", "RS", "Mato Grosso do Sul"];
-    return genMockData(items, 20, 600);
+    // return genMockData(params.estado ? mock.cidades : mock.estados, 20, 600);
+
+    const agg = await VagaModel.aggregate(
+      [
+        {
+          $match: {
+            active: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "pjs",
+            let: { empresa: "$ownerId" },
+            pipeline: [{ $match: { $expr: { $eq: ["$$empresa", "$_id"] } } }],
+            as: "empresa",
+          },
+        },
+        {
+          $unwind: "$empresa",
+        },
+        {
+          $group: params.estado
+            ? {
+                _id: {
+                  $ifNull: ["$endereco.cidade", "$empresa.endereco.cidade"],
+                },
+                estado: {
+                  $first: {
+                    $ifNull: ["$endereco.estado", "$empresa.endereco.estado"],
+                  },
+                },
+                count: { $sum: 1 },
+              }
+            : {
+                _id: {
+                  $ifNull: ["$endereco.estado", "$empresa.endereco.estado"],
+                },
+                count: { $sum: 1 },
+              },
+        },
+        params.estado
+          ? {
+              $match: {
+                estado: params.estado,
+              },
+            }
+          : null,
+        { $sort: { count: -1 } },
+        { $limit: +(params?.limit || 10) },
+        {
+          $match: {
+            _id: { $ne: null },
+          },
+        },
+        {
+          $project: {
+            name: "$_id",
+            value: "$count",
+          },
+        },
+      ].filter((x) => !!x)
+    );
+
+    return agg;
   },
   [FEAT.VER_G_EVO_VAGAS]: async function (params) {
-    return genMockData(12, 20, 600);
+    // return genMockData(12, 20, 600);
+
+    const agg = await VagaModel.aggregate([
+      {
+        $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const dataObj = fromAggToTimeValue(agg);
+
+    const nMonths = +(params?.limit || 12);
+    const dataBuckets = fillTimeBuckets(dataObj, nMonths);
+    // return { agg, dataObj, data: dataBuckets };
+    return dataBuckets;
   },
   [FEAT.VER_G_TOP_CARGOS]: async function (params) {
-    const items = [
-      "Abacaxicultor",
-      "Gerente Administrativo",
-      "Auxiliar Administrativo",
-      "Diretor de Vendas",
-      "Coordenador Executivo",
-      "Coordenador de Mídias",
-      "Gerente Comercial",
-    ];
-    return genMockData(items, 20, 600);
+    // return genMockData(mock.cargos, 20, 600);
+
+    const limit = +(params?.limit || 10);
+    const agg = await VagaModel.aggregate([
+      {
+        $match: {
+          active: true,
+          cargo: { $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: "$cargo",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: limit },
+    ]);
+
+    const hydratedAgg = await withLookup(agg, CBOModel, "_id", "_id", "cargo");
+
+    const data = hydratedAgg.map((item) => ({
+      name: capitalize(item.cargo?.nome || "?"),
+      value: item.count,
+    }));
+
+    return data;
   },
   [FEAT.VER_G_EVO_EMPRESAS]: async function (params) {
-    return genMockData(12, 20, 600);
+    // return genMockData(12, 20, 600);
+    const agg = await PJModel.aggregate([
+      {
+        $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const dataObj = fromAggToTimeValue(agg);
+
+    const nMonths = +(params?.limit || 12);
+    const dataBuckets = fillTimeBuckets(dataObj, nMonths);
+    return dataBuckets;
   },
   [FEAT.VER_G_SALARIO_CARGOS]: async function (params) {
-    const items = [
-      "Abacaxicultor",
-      "Gerente Administrativo",
-      "Auxiliar Administrativo",
-      "Diretor de Vendas",
-      "Coordenador Executivo",
-      "Coordenador de Mídias",
-      "Gerente Comercial",
-    ];
-    return genMockData(items, 5000, 50000);
+    // return genMockData(mock.cargos, 1, 1);
+
+    const agg = await VagaModel.aggregate([
+      { $match: { cargo: { $ne: null } } },
+      {
+        $group: {
+          _id: "$cargo",
+          // salarioMinimo: { $avg: "$salarioMinimo" },
+          // salarioMaximo: { $avg: "$salarioMaximo" },
+          value: {
+            $avg: {
+              $divide: [{ $add: ["$salarioMinimo", "$salarioMaximo"] }, 2],
+            },
+          },
+        },
+      },
+      { $sort: { value: -1 } },
+      { $limit: +(params?.limit || 10) },
+      {
+        $lookup: {
+          from: "cbos",
+          let: { cargo: "$_id" },
+          pipeline: [{ $match: { $expr: { $eq: ["$$cargo", "$_id"] } } }],
+          as: "cargo",
+        },
+      },
+      { $unwind: "$cargo" },
+      {
+        $project: {
+          // name: "$_id",
+          name: "$cargo.nome",
+          // salarioMinimo: "$salarioMinimo",
+          // salarioMaximo: "$salarioMaximo",
+          value: "$value",
+        },
+      },
+    ]);
+
+    return agg;
   },
 
   // PJ
   [FEAT.VER_G_COMP_VAGAS]: async function (params) {
-    // "VER_GRAFICO_COMPETENCIAS_VAGAS",
+    // return genMockData(mock.competencias, 20, 600);
+    const agg = await QualificacaoModel.aggregate([
+      {
+        $match: {
+          valid: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "vagas",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ["$$id", "$qualificacoes"] },
+                active: true,
+              },
+            },
+          ],
+          as: "vagas",
+        },
+      },
+      {
+        $project: {
+          nome: "$nome",
+          count_vagas: { $size: "$vagas" },
+        },
+      },
+      {
+        $group: {
+          _id: "$nome",
+          count: { $sum: "$count_vagas" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: +(params?.limit || 10) },
+    ]);
+
+    const data = agg.map((item) => ({
+      name: item._id,
+      value: item.count,
+    }));
+
+    return data;
   },
   [FEAT.VER_G_COMP_CAND]: async function (params) {
-    // "VER_GRAFICO_COMPETENCIAS_CANDIDATOS",
+    // return genMockData(mock.competencias, 20, 600);
+    const agg = await QualificacaoModel.aggregate([
+      { $match: { valid: true } },
+      {
+        $lookup: {
+          from: "pfs",
+          let: { id: "$_id" },
+          pipeline: [
+            { $unwind: "$experienciasProfissionais" },
+            {
+              $match: {
+                $expr: {
+                  $in: ["$$id", "$experienciasProfissionais.qualificacoes"],
+                },
+              },
+            },
+          ],
+          as: "pfs",
+        },
+      },
+      {
+        $project: {
+          nome: "$nome",
+          count_candidatos: { $size: "$pfs" },
+        },
+      },
+      {
+        $group: {
+          _id: "$nome",
+          count: { $sum: "$count_candidatos" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: +(params?.limit || 10) },
+    ]);
+
+    const data = agg.map((item) => ({
+      name: item._id,
+      value: item.count,
+    }));
+
+    return data;
   },
   [FEAT.VER_G_HABILIDADES_VAGAS]: async function (params) {
-    // "VER_GRAFICO_HABILIDADES_VAGAS",
+    // return genMockData(mock.habilidades, 20, 600);
+    const agg = await HabilidadeModel.aggregate([
+      {
+        $lookup: {
+          from: "vagas",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ["$$id", "$habilidades"] },
+                active: true,
+              },
+            },
+          ],
+          as: "vagas",
+        },
+      },
+      {
+        $project: {
+          nome: "$nome",
+          count_vagas: { $size: "$vagas" },
+        },
+      },
+      {
+        $group: {
+          _id: "$nome",
+          count: { $sum: "$count_vagas" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: +(params?.limit || 10) },
+    ]);
+
+    const data = agg.map((item) => ({
+      name: item._id,
+      value: item.count,
+    }));
+
+    return data;
   },
   [FEAT.VER_G_HABILIDADES_CAND]: async function (params) {
-    // "VER_GRAFICO_HABILIDADES_CANDIDATOS",
+    // return genMockData(mock.habilidades, 20, 600);
+    const agg = await HabilidadeModel.aggregate([
+      {
+        $lookup: {
+          from: "pfs",
+          let: { id: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                habilidades: { $ne: null },
+                $expr: { $in: ["$$id", "$habilidades"] },
+              },
+            },
+          ],
+          as: "pfs",
+        },
+      },
+      {
+        $project: {
+          nome: "$nome",
+          count_candidatos: { $size: "$pfs" },
+        },
+      },
+      {
+        $group: {
+          _id: "$nome",
+          count: { $sum: "$count_candidatos" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: +(params?.limit || 10) },
+    ]);
+
+    const data = agg.map((item) => ({
+      name: item._id,
+      value: item.count,
+    }));
+
+    return data;
   },
   [FEAT.VER_G_CAND_FINALISTAS]: async function (params) {
-    // "VER_GRAFICO_CANDIDATOS_FINALISTAS",
+    // return genMockData(12, 20, 600);
+
+    const agg = await PropostaModel.aggregate([
+      {
+        $match: {
+          contratou: true,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            candidato: "$candidatoId",
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const dataObj = fromAggToTimeValue(agg);
+
+    const nMonths = +(params?.limit || 12);
+    const dataBuckets = fillTimeBuckets(dataObj, nMonths);
+    // return { agg, dataObj, data: dataBuckets };
+    return dataBuckets;
   },
   [FEAT.VER_G_EVO_CANDIDATURA]: async function (params) {
-    // "VER_GRAFICO_EVOLUCAO_CANDIDATURA",
+    // return [
+    //   { time: "2023-01-01", candidaturas: 0, contratacoes: 0 },
+    //   { time: "2023-02-01", candidaturas: 0, contratacoes: 0 },
+    //   { time: "2023-03-01", candidaturas: 12, contratacoes: 1 },
+    //   { time: "2023-04-01", candidaturas: 11, contratacoes: 0 },
+    //   { time: "2023-05-01", candidaturas: 53, contratacoes: 32 },
+    //   { time: "2023-06-01", candidaturas: 0, contratacoes: 15 },
+    //   { time: "2023-07-01", candidaturas: 22, contratacoes: 7 },
+    //   { time: "2023-08-01", candidaturas: 102, contratacoes: 65 },
+    //   { time: "2023-09-01", candidaturas: 63, contratacoes: 42 },
+    //   { time: "2023-10-01", candidaturas: 96, contratacoes: 78 },
+    //   { time: "2023-11-01", candidaturas: 73, contratacoes: 15 },
+    //   { time: "2023-12-01", candidaturas: 114, contratacoes: 67 },
+    // ];
+
+    const aggCandidaturas = await PropostaModel.aggregate([
+      {
+        $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    const aggContratacoes = await PropostaModel.aggregate([
+      {
+        $match: {
+          contratou: true,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const dataObjCandidaturas = fromAggToTimeValue(aggCandidaturas);
+    const dataObjContratacoes = fromAggToTimeValue(aggContratacoes);
+
+    const nMonths = +(params?.limit || 12);
+    const dataBucketsCandidaturas = fillTimeBuckets(
+      dataObjCandidaturas,
+      nMonths
+    );
+    const dataBucketsContratacoes = fillTimeBuckets(
+      dataObjContratacoes,
+      nMonths
+    );
+    const mergedData = dataBucketsCandidaturas.map((candidatura, idx) => ({
+      time: candidatura.time,
+      candidaturas: candidatura.value,
+      time2: dataBucketsContratacoes[idx].time,
+      contratacoes: dataBucketsContratacoes[idx].value,
+    }));
+    return mergedData;
   },
   [FEAT.VER_G_CONTRATACOES_CARGOS]: async function (params) {
-    // "VER_GRAFICO_CONTRATACOES_CARGOS",
+    // return genMockData(mock.cargos, 0, 70);
+
+    const agg = await PropostaModel.aggregate([
+      {
+        $match: {
+          contratou: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "vagas",
+          let: { vagaId: "$vagaId" },
+          pipeline: [{ $match: { $expr: { $eq: ["$$vagaId", "$_id"] } } }],
+          as: "vagas",
+        },
+      },
+      { $unwind: "$vagas" },
+      {
+        $group: {
+          _id: "$vagas.cargo",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: +(params?.limit || 10) },
+      {
+        $lookup: {
+          from: "cbos",
+          let: { cargo: "$_id" },
+          pipeline: [{ $match: { $expr: { $eq: ["$$cargo", "$_id"] } } }],
+          as: "cargo",
+        },
+      },
+      {
+        $match: {
+          _id: { $ne: null },
+        },
+      },
+      {
+        $project: {
+          name: "$cargo.nome",
+          value: "$count",
+        },
+      },
+    ]);
+
+    // const data = agg.map((item) => ({
+    //   name: item._id,
+    //   value: item.count,
+    // }));
+
+    return agg;
   },
 };
 
