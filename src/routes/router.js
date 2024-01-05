@@ -14,6 +14,7 @@ const habilidadeController = require("../controllers/habilidade.controller");
 const qualificacaoController = require("../controllers/qualificacao.controller");
 const propostaController = require("../controllers/proposta.controller");
 const planAssController = require("../controllers/plano-assinatura.controller");
+const planAssGatewayController = require("../controllers/assinatura.gateway.controller");
 const dashboardController = require("../controllers/dashboard.controller")
 
 // =====================
@@ -126,6 +127,16 @@ app.delete(
   guard([T_PLAN.MA]),
   routeWrapper(planAssController.handleDelete)
 );
+
+// =====================
+// Gateway Subscription Plans
+// =====================
+
+app.post(
+    "/api/plano-assinatura/gateway/sync",
+    routeWrapper(planAssGatewayController.syncPlansInGateway)
+);
+
 
 // =====================
 // Personal Data
