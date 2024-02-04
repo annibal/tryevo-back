@@ -11,7 +11,7 @@ const pagBankheaders = {
     headers: {Authorization: `Bearer ${config.pagbanktoken}`}
 }
 
-const createPlanInGateway = async (id, nome, preco, month_amount, description) => {
+const createPlanInGateway = async ({ id, nome, preco, month_amount, description }) => {
     let data;
     if (preco > 1.0) {
         console.log("Creating plan in gateway: " + nome)
@@ -28,18 +28,15 @@ const createPlanInGateway = async (id, nome, preco, month_amount, description) =
             payment_method: ['CREDIT_CARD', 'BOLETO']
         }
 
-        try {
-            data = axios.post(`${config.pagbankurl}/plans`, body, pagBankheaders)
-            return data.id
-        } catch (e) {
-            console.log(e)
-        }
+        data = await axios.post(`${config.pagbankurl}/plans`, body, pagBankheaders)
+        console.log(data)
+        return data.data.id
     } else {
-        console.log("Preco do plano deve ser maior do que 1.0")
+        throw new Error("Preco do plano deve ser maior do que 1.00")
     }
 };
 
-const updatePlanInGateway = async (id, gateway_id, nome, preco, month_amount, description) => {
+const updatePlanInGateway = async (gateway_id, { id, nome, preco, month_amount, description }) => {
     let data;
     if (preco > 1.0) {
         console.log("Updating plan in gateway: " + nome)
@@ -56,14 +53,10 @@ const updatePlanInGateway = async (id, gateway_id, nome, preco, month_amount, de
             payment_method: ['CREDIT_CARD', 'BOLETO']
         }
 
-        try {
-            data = axios.put(`${config.pagbankurl}/plans/${gateway_id}`, body, pagBankheaders)
-            return data.id
-        } catch (e) {
-            console.log(e)
-        }
+        data = await axios.put(`${config.pagbankurl}/plans/${gateway_id}`, body, pagBankheaders)
+        return data.data.id
     } else {
-        console.log("Preco do plano deve ser maior do que 1.0")
+        throw new Error("Preco do plano deve ser maior do que 1.00")
     }
 };
 
@@ -84,7 +77,6 @@ const activatePlanInGateway = async (plan_id) => {
         console.log(e)
     }
 };
-
 
 const createCustomerInGateway = async (data) => {
     console.log("Creating customer in gateway: " + data.user_id)
@@ -234,7 +226,7 @@ const cancelSubscriptionInGateway = async (subscription_id) => {
     }
 };
 
-exports.syncPlansInGateway = async (req, res) => {
+const syncPlansInGateway = async (req, res) => {
 
 
     const search = {gateway_id: null, active: true};
@@ -275,5 +267,16 @@ exports.syncPlansInGateway = async (req, res) => {
     }
 }
 
-
+module.exports = {
+    createPlanInGateway,
+    updatePlanInGateway,
+    inactivatePlanInGateway,
+    activatePlanInGateway,
+    createCustomerInGateway,
+    changeCustomerInGateway,
+    changeCustomerBillingInGateway,
+    createSubscriptionInGateway,
+    cancelSubscriptionInGateway,
+    syncPlansInGateway,
+}
 

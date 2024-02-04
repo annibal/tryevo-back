@@ -7,6 +7,7 @@ const {
 } = require("../schemas/enums");
 const PlanAssSchema = require("../schemas/plano-assinatura.schema");
 const UsuarioSchema = require("../schemas/usuario.schema");
+const { updatePlanInGateway, createPlanInGateway } = require("./assinatura.gateway.controller");
 
 const PlanAssModel = mongoose.model("PlanoAssinatura", PlanAssSchema);
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
@@ -220,8 +221,6 @@ async function savePlanoAssinatura(paramData) {
         objModoPagto.nome = modoPagto.nome;
       }
 
-      // TODO: pagbankGatewayId
-
       planAssModosPagto.push(objModoPagto)
     });
 
@@ -249,19 +248,48 @@ async function savePlanoAssinatura(paramData) {
       }
     }
 
+    for (let i = 0; i < (planAssData.modosDePagamento || []).length; i++) {
+      const modoPagto = planAssData.modosDePagamento[i];
+
+      const pagBankData = {
+        id: planAssData._id + "_M" + modoPagto.meses,
+        nome: planAssData.nome,
+        preco: +modoPagto.preco,
+        month_amount: modoPagto.meses,
+        description: [planAssData.tipo, planAssData.descricao, modoPagto.nome].filter(x => x).join(" | "),
+      }
+
+      if (modoPagto.pagbankGatewayId) {
+        planAssData.modosDePagamento[i].pagbankGatewayId = await updatePlanInGateway(modoPagto.pagbankGatewayId, pagBankData);
+      } else {
+        planAssData.modosDePagamento[i].pagbankGatewayId = await createPlanInGateway(pagBankData);
+      }
+      console.log(i, planAssData)
+    }
+
+
     return await PlanAssModel.findByIdAndUpdate(paramData._id, planAssData, {
       new: true,
       runValidators: true,
     });
-
-    // update PagBank obj
-    // re-assign pagbankGatewayId ?
   } else {
     planAssData._id = id6();
-    return await PlanAssModel.create(planAssData);
+    
+    for (let i = 0; i < (planAssData.modosDePagamento || []).length; i++) {
+      const modoPagto = planAssData.modosDePagamento[i];
 
-    // create PagBank obj
-    // assign pagbankGatewayId
+      const pagBankData = {
+        id: planAssData._id + "_M" + modoPagto.meses,
+        nome: planAssData.nome,
+        preco: +modoPagto.preco,
+        month_amount: modoPagto.meses,
+        description: [planAssData.tipo, planAssData.descricao, modoPagto.nome].filter(x => x).join(" | "),
+      }
+
+      planAssData.modosDePagamento[i].pagbankGatewayId = await createPlanInGateway(pagBankData);
+    }
+    
+    return await PlanAssModel.create(planAssData);
   }
 }
 async function deletePlanoAssinatura(id) {

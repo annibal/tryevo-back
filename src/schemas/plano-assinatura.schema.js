@@ -5,7 +5,6 @@ const {
 } = require("./enums");
 
 const PlanoAssinatura = SchemaFactory({
-  gateway_id: {type: String},
   nome: { type: String, required: true },
   descricao: { type: String },
   active: { type: Boolean, default: true },
