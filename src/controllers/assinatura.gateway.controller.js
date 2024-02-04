@@ -96,7 +96,8 @@ const createCustomerInGateway = async (data) => {
             locality: data.bairro,
             city: data.cidade,
             region_code: data.sigla_estado,
-            postal_code: data.cep
+            postal_code: data.cep,
+            country: "BRA"
         }
     }
 
@@ -139,7 +140,8 @@ const changeCustomerInGateway = async (data, gateway_customer_id) => {
             locality: data.bairro,
             city: data.cidade,
             region_code: data.sigla_estado,
-            postal_code: data.cep
+            postal_code: data.cep,
+            country: "BRA"
         }
     }
 
@@ -224,6 +226,17 @@ const createSubscriptionInGateway = async (user_id, plan_id, cvv) => {
 
 };
 
+const getSubscriptionInGateway = async (subscription_id) => {
+    console.log("Retrieving subscription in gateway: " + subscription_id)
+    let data
+    try {
+        data = await axios.get(`${config.pagbankurl}/subscriptions/${subscription_id}`, null, pagBankheaders)
+        return data;
+    } catch (e) {
+        console.log(e)
+    }
+};
+
 const cancelSubscriptionInGateway = async (subscription_id) => {
     console.log("Cancelling subscription in gateway: " + subscription_id)
 
@@ -286,6 +299,7 @@ module.exports = {
     createSubscriptionInGateway,
     cancelSubscriptionInGateway,
     syncPlansInGateway,
-    getCustomerFromGateway
+    getCustomerFromGateway,
+    getSubscriptionInGateway
 }
 
