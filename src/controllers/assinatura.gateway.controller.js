@@ -100,7 +100,8 @@ const createCustomerInGateway = async (data) => {
             locality: data.bairro,
             city: data.cidade,
             region_code: data.sigla_estado,
-            postal_code: data.cep
+            postal_code: data.cep,
+            country: "BRA"
         }
     }
 
@@ -143,7 +144,8 @@ const changeCustomerInGateway = async (data, gateway_customer_id) => {
             locality: data.bairro,
             city: data.cidade,
             region_code: data.sigla_estado,
-            postal_code: data.cep
+            postal_code: data.cep,
+            country: "BRA"
         }
     }
 
