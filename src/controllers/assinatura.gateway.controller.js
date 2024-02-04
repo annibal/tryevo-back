@@ -290,5 +290,6 @@ module.exports = {
     createSubscriptionInGateway,
     cancelSubscriptionInGateway,
     syncPlansInGateway,
+    getCustomerFromGateway
 }
 
