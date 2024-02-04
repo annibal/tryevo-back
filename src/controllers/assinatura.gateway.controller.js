@@ -11,7 +11,7 @@ const pagBankheaders = {
     headers: {Authorization: `Bearer ${config.pagbanktoken}`}
 }
 
-const createPlanInGateway = async ({ id, nome, preco, month_amount, description }) => {
+const createPlanInGateway = async ({id, nome, preco, month_amount, description}) => {
     let data;
     if (preco > 1.0) {
         console.log("Creating plan in gateway: " + nome)
@@ -36,7 +36,7 @@ const createPlanInGateway = async ({ id, nome, preco, month_amount, description 
     }
 };
 
-const updatePlanInGateway = async (gateway_id, { id, nome, preco, month_amount, description }) => {
+const updatePlanInGateway = async (gateway_id, {id, nome, preco, month_amount, description}) => {
     let data;
     if (preco > 1.0) {
         console.log("Updating plan in gateway: " + nome)
@@ -176,6 +176,18 @@ const changeCustomerBillingInGateway = async (data, gateway_customer_id) => {
     }
 
 };
+
+const getCustomerFromGateway = async (customer_id) => {
+    console.log(`Retrieving customer info in gateway: ${customer_id}`)
+    let data
+
+    try {
+        data = axios.get(`${config.pagbankurl}/customers/${customer_id}`, body, pagBankheaders)
+        return data
+    } catch (e) {
+        console.log(e)
+    }
+}
 
 const createSubscriptionInGateway = async (user_id, plan_id, cvv) => {
     let data;
