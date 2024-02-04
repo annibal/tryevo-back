@@ -62,11 +62,7 @@ const updatePlanInGateway = async (gateway_id, {id, nome, preco, month_amount, d
 
 const inactivatePlanInGateway = async (plan_id) => {
     console.log(`Inactivating plan in gateway: ${plan_id}`)
-    try {
-        await axios.put(`${config.pagbankurl}/plans/${plan_id}/inactivate`, null, pagBankheaders)
-    } catch (e) {
-        console.log(e)
-    }
+    await axios.put(`${config.pagbankurl}/plans/${plan_id}/inactivate`, null, pagBankheaders);
 };
 
 const activatePlanInGateway = async (plan_id) => {

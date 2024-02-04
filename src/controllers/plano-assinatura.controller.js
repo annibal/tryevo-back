@@ -7,7 +7,11 @@ const {
 } = require("../schemas/enums");
 const PlanAssSchema = require("../schemas/plano-assinatura.schema");
 const UsuarioSchema = require("../schemas/usuario.schema");
-const { updatePlanInGateway, createPlanInGateway } = require("./assinatura.gateway.controller");
+const {
+  updatePlanInGateway,
+  createPlanInGateway,
+  inactivatePlanInGateway,
+} = require("./assinatura.gateway.controller");
 
 const PlanAssModel = mongoose.model("PlanoAssinatura", PlanAssSchema);
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
@@ -23,22 +27,82 @@ const TIPO_FEATURE_VALOR = (() => {
   const V = TIPO_VALOR_FEATURE_PLAN_ASS;
   return [
     { tipo: T.PF, chave: F.VER_DASHBOARD, valType: V.VER },
-    { tipo: T.PF, chave: F.VER_G_VAGAS_REGIAO, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PF, chave: F.VER_G_EVO_VAGAS, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PF, chave: F.VER_G_TOP_CARGOS, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PF, chave: F.VER_G_EVO_EMPRESAS, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PF, chave: F.VER_G_SALARIO_CARGOS, valType: V.VER, parent: F.VER_DASHBOARD },
+    {
+      tipo: T.PF,
+      chave: F.VER_G_VAGAS_REGIAO,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PF,
+      chave: F.VER_G_EVO_VAGAS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PF,
+      chave: F.VER_G_TOP_CARGOS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PF,
+      chave: F.VER_G_EVO_EMPRESAS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PF,
+      chave: F.VER_G_SALARIO_CARGOS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
     { tipo: T.PF, chave: F.VER_NOME_EMPRESA, valType: V.VER },
     { tipo: T.PF, chave: F.LIMITE_CANDIDATURAS, valType: V.LIMITE },
 
     { tipo: T.PJ, chave: F.VER_DASHBOARD, valType: V.VER },
-    { tipo: T.PJ, chave: F.VER_G_COMP_VAGAS, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PJ, chave: F.VER_G_COMP_CAND, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PJ, chave: F.VER_G_HABILIDADES_VAGAS, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PJ, chave: F.VER_G_HABILIDADES_CAND, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PJ, chave: F.VER_G_CAND_FINALISTAS, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PJ, chave: F.VER_G_EVO_CANDIDATURA, valType: V.VER, parent: F.VER_DASHBOARD },
-    { tipo: T.PJ, chave: F.VER_G_CONTRATACOES_CARGOS, valType: V.VER, parent: F.VER_DASHBOARD },
+    {
+      tipo: T.PJ,
+      chave: F.VER_G_COMP_VAGAS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PJ,
+      chave: F.VER_G_COMP_CAND,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PJ,
+      chave: F.VER_G_HABILIDADES_VAGAS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PJ,
+      chave: F.VER_G_HABILIDADES_CAND,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PJ,
+      chave: F.VER_G_CAND_FINALISTAS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PJ,
+      chave: F.VER_G_EVO_CANDIDATURA,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
+    {
+      tipo: T.PJ,
+      chave: F.VER_G_CONTRATACOES_CARGOS,
+      valType: V.VER,
+      parent: F.VER_DASHBOARD,
+    },
     { tipo: T.PJ, chave: F.VER_DADOS_CANDIDATO, valType: V.VER },
     { tipo: T.PJ, chave: F.VER_CV_FULL, valType: V.VER },
     { tipo: T.PJ, chave: F.LIMITE_VAGAS, valType: V.LIMITE },
@@ -89,10 +153,10 @@ async function listPlanosAssinatura(paramSearch = {}) {
     delete planoAssinatura.preco;
     delete planoAssinatura.descontoAnual;
     return planoAssinatura;
-  })
+  });
 
   return {
-    data: (planAssData || []),
+    data: planAssData || [],
     meta: {
       total,
       search,
@@ -104,7 +168,7 @@ async function listTiposPlanosAssinatura() {
     { tipo: TIPO_PLANO_ASSINATURA.PF, nome: "PF - Candidato" },
     { tipo: TIPO_PLANO_ASSINATURA.PJ, nome: "PJ - Empresa" },
     { tipo: TIPO_PLANO_ASSINATURA.MA, nome: "Master Admin" },
-  ]
+  ];
 }
 async function showDefaultPlanoAssinatura(tipo) {
   if (!tiposPlanAss.includes(tipo)) {
@@ -136,9 +200,9 @@ async function makePlanosAssinaturaNotDefault(tipo) {
 }
 async function showPlanoAssinatura(id) {
   const planoAssinatura = await PlanAssModel.findById(id).lean();
-  delete planoAssinatura.preco;
-  delete planoAssinatura.descontoAnual;
-  return planoAssinatura
+  // delete planoAssinatura.preco;
+  // delete planoAssinatura.descontoAnual;
+  return planoAssinatura;
 }
 async function listFeatures(tipo) {
   if (tipo) {
@@ -210,7 +274,7 @@ async function savePlanoAssinatura(paramData) {
   if (dataModosDePagamento.length > 0) {
     const planAssModosPagto = [];
     dataModosDePagamento.forEach((modoPagto) => {
-      const objModoPagto = {}
+      const objModoPagto = {};
       if (modoPagto.preco != null && !isNaN(modoPagto.preco)) {
         objModoPagto.preco = +modoPagto.preco;
       }
@@ -221,7 +285,7 @@ async function savePlanoAssinatura(paramData) {
         objModoPagto.nome = modoPagto.nome;
       }
 
-      planAssModosPagto.push(objModoPagto)
+      planAssModosPagto.push(objModoPagto);
     });
 
     if (planAssModosPagto.length > 0) {
@@ -251,22 +315,30 @@ async function savePlanoAssinatura(paramData) {
     for (let i = 0; i < (planAssData.modosDePagamento || []).length; i++) {
       const modoPagto = planAssData.modosDePagamento[i];
 
-      const pagBankData = {
-        id: planAssData._id + "_M" + modoPagto.meses,
-        nome: planAssData.nome,
-        preco: +modoPagto.preco,
-        month_amount: modoPagto.meses,
-        description: [planAssData.tipo, planAssData.descricao, modoPagto.nome].filter(x => x).join(" | "),
-      }
+      if (modoPagto.preco > 0) {
+        const pagBankData = {
+          id: planAssData._id + "_M" + modoPagto.meses,
+          nome: planAssData.nome,
+          preco: +modoPagto.preco,
+          month_amount: modoPagto.meses,
+          description: [planAssData.tipo, planAssData.descricao, modoPagto.nome]
+            .filter((x) => x)
+            .join(" | "),
+        };
 
-      if (modoPagto.pagbankGatewayId) {
-        planAssData.modosDePagamento[i].pagbankGatewayId = await updatePlanInGateway(modoPagto.pagbankGatewayId, pagBankData);
-      } else {
-        planAssData.modosDePagamento[i].pagbankGatewayId = await createPlanInGateway(pagBankData);
+        if (modoPagto.pagbankGatewayId) {
+          planAssData.modosDePagamento[i].pagbankGatewayId =
+            await updatePlanInGateway(modoPagto.pagbankGatewayId, pagBankData);
+        } else {
+          planAssData.modosDePagamento[i].pagbankGatewayId =
+            await createPlanInGateway(pagBankData);
+        }
       }
-      console.log(i, planAssData)
     }
 
+    for (let i = 0; i < (planAssData.idsRemove || []).length; i++) {
+      await inactivatePlanInGateway(planAssData.idsRemove[i]);
+    }
 
     return await PlanAssModel.findByIdAndUpdate(paramData._id, planAssData, {
       new: true,
@@ -274,21 +346,26 @@ async function savePlanoAssinatura(paramData) {
     });
   } else {
     planAssData._id = id6();
-    
+
     for (let i = 0; i < (planAssData.modosDePagamento || []).length; i++) {
       const modoPagto = planAssData.modosDePagamento[i];
 
-      const pagBankData = {
-        id: planAssData._id + "_M" + modoPagto.meses,
-        nome: planAssData.nome,
-        preco: +modoPagto.preco,
-        month_amount: modoPagto.meses,
-        description: [planAssData.tipo, planAssData.descricao, modoPagto.nome].filter(x => x).join(" | "),
-      }
+      if (modoPagto.preco > 0) {
+        const pagBankData = {
+          id: planAssData._id + "_M" + modoPagto.meses,
+          nome: planAssData.nome,
+          preco: +modoPagto.preco,
+          month_amount: modoPagto.meses,
+          description: [planAssData.tipo, planAssData.descricao, modoPagto.nome]
+            .filter((x) => x)
+            .join(" | "),
+        };
 
-      planAssData.modosDePagamento[i].pagbankGatewayId = await createPlanInGateway(pagBankData);
+        planAssData.modosDePagamento[i].pagbankGatewayId =
+          await createPlanInGateway(pagBankData);
+      }
     }
-    
+
     return await PlanAssModel.create(planAssData);
   }
 }
@@ -297,7 +374,9 @@ async function deletePlanoAssinatura(id) {
   if (!planAss) throw new Error("Plano de Assinatura não encontrado");
 
   if (planAss.defaultForTipo) {
-    throw new Error(`Operação não permitida: deletar plano padrão para tipo "${planAss.tipo}"`);
+    throw new Error(
+      `Operação não permitida: deletar plano padrão para tipo "${planAss.tipo}"`
+    );
   }
 
   // check if users have the plan
@@ -313,20 +392,17 @@ async function deletePlanoAssinatura(id) {
 // migration
 
 async function legacyUpdateUsers() {
-  const defaultPF = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PF)
-  const defaultPJ = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PJ)
-  
-  await UsuarioModel.updateMany({ plano: { $in: [
-    "PF_FREE",
-    "PF_SMART",
-    "PF_PREMIUM",
-  ] }}, { plano: defaultPF._id })
-  await UsuarioModel.updateMany({ plano: { $in: [
-    "PJ_FREE",
-    "PJ_SMART",
-    "PJ_PREMIUM",
-    "PJ_ENTERPRISE",
-  ] }}, { plano: defaultPJ._id })
+  const defaultPF = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PF);
+  const defaultPJ = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PJ);
+
+  await UsuarioModel.updateMany(
+    { plano: { $in: ["PF_FREE", "PF_SMART", "PF_PREMIUM"] } },
+    { plano: defaultPF._id }
+  );
+  await UsuarioModel.updateMany(
+    { plano: { $in: ["PJ_FREE", "PJ_SMART", "PJ_PREMIUM", "PJ_ENTERPRISE"] } },
+    { plano: defaultPJ._id }
+  );
 
   return true;
 }
