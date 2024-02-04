@@ -82,7 +82,13 @@ async function listPlanosAssinatura(paramSearch = {}) {
   }
 
   const total = await PlanAssModel.countDocuments(search);
-  let planAssData = await PlanAssModel.find(search).exec();
+  let planAssData = await PlanAssModel.find(search).lean().exec();
+
+  planAssData = planAssData.map((planoAssinatura) => {
+    delete planoAssinatura.preco;
+    delete planoAssinatura.descontoAnual;
+    return planoAssinatura;
+  })
 
   return {
     data: (planAssData || []),
@@ -128,7 +134,9 @@ async function makePlanosAssinaturaNotDefault(tipo) {
   console.info(`\nAtualizou ${undefaultedPlanos?.length} para não padrão\n`);
 }
 async function showPlanoAssinatura(id) {
-  const planoAssinatura = await PlanAssModel.findById(id);
+  const planoAssinatura = await PlanAssModel.findById(id).lean();
+  delete planoAssinatura.preco;
+  delete planoAssinatura.descontoAnual;
   return planoAssinatura
 }
 async function listFeatures(tipo) {
@@ -141,6 +149,7 @@ async function listFeatures(tipo) {
 // nome, tipo
 // id?, defaultForTipo?, descricao?, active?, preco?, descontoAnual?
 // features?: [ { key: "", value: true | 123 } ]
+// modosDePagamento: [ { preco?: 123, meses?: 12, nome?: "", pagbankGatewayId?: "" } ]
 async function savePlanoAssinatura(paramData) {
   const planAssData = {};
   if (paramData.nome) {
@@ -159,13 +168,6 @@ async function savePlanoAssinatura(paramData) {
     }
   }
   planAssData.active = !!paramData.active;
-
-  if (paramData.preco != null && !isNaN(paramData.preco)) {
-    planAssData.preco = +paramData.preco;
-  }
-  if (paramData.descontoAnual != null && !isNaN(paramData.descontoAnual)) {
-    planAssData.descontoAnual = +paramData.descontoAnual;
-  }
 
   const dataFeatures = paramData.features || [];
   if (dataFeatures.length > 0) {
@@ -203,6 +205,31 @@ async function savePlanoAssinatura(paramData) {
     planAssData.defaultForTipo = true;
   }
 
+  const dataModosDePagamento = paramData.modosDePagamento || [];
+  if (dataModosDePagamento.length > 0) {
+    const planAssModosPagto = [];
+    dataModosDePagamento.forEach((modoPagto) => {
+      const objModoPagto = {}
+      if (modoPagto.preco != null && !isNaN(modoPagto.preco)) {
+        objModoPagto.preco = +modoPagto.preco;
+      }
+      if (modoPagto.meses != null && !isNaN(modoPagto.meses)) {
+        objModoPagto.meses = +modoPagto.meses;
+      }
+      if (modoPagto.nome) {
+        objModoPagto.nome = modoPagto.nome;
+      }
+
+      // TODO: pagbankGatewayId
+
+      planAssModosPagto.push(objModoPagto)
+    });
+
+    if (planAssModosPagto.length > 0) {
+      planAssData.modosDePagamento = planAssModosPagto;
+    }
+  }
+
   if (paramData._id) {
     planAssData._id = paramData._id;
 
@@ -226,9 +253,15 @@ async function savePlanoAssinatura(paramData) {
       new: true,
       runValidators: true,
     });
+
+    // update PagBank obj
+    // re-assign pagbankGatewayId ?
   } else {
     planAssData._id = id6();
     return await PlanAssModel.create(planAssData);
+
+    // create PagBank obj
+    // assign pagbankGatewayId
   }
 }
 async function deletePlanoAssinatura(id) {

@@ -8,8 +8,6 @@ const PlanoAssinatura = SchemaFactory({
   nome: { type: String, required: true },
   descricao: { type: String },
   active: { type: Boolean, default: true },
-  preco: { type: Number, default: 0 },
-  descontoAnual: { type: Number, default: 0 },
   tipo: {
     type: String,
     required: true,
@@ -28,6 +26,17 @@ const PlanoAssinatura = SchemaFactory({
       },
     ],
   },
+  modosDePagamento: {
+    type: [
+      {
+        preco: { type: Number, default: 0 },
+        meses: { type: Number, default: 1 },
+        nome: { type: String, default: "Mensal" },
+        pagbankGatewayId: { type: String }
+      }
+    ],
+    required: true,
+  }
 });
 
 module.exports = PlanoAssinatura;
