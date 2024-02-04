@@ -230,6 +230,17 @@ const createSubscriptionInGateway = async (user_id, plan_id, cvv) => {
 
 };
 
+const getSubscriptionInGateway = async (subscription_id) => {
+    console.log("Retrieving subscription in gateway: " + subscription_id)
+    let data
+    try {
+        data = await axios.get(`${config.pagbankurl}/subscriptions/${subscription_id}`, null, pagBankheaders)
+        return data;
+    } catch (e) {
+        console.log(e)
+    }
+};
+
 const cancelSubscriptionInGateway = async (subscription_id) => {
     console.log("Cancelling subscription in gateway: " + subscription_id)
 
