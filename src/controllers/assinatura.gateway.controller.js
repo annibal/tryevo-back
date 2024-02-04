@@ -303,6 +303,7 @@ module.exports = {
     createSubscriptionInGateway,
     cancelSubscriptionInGateway,
     syncPlansInGateway,
-    getCustomerFromGateway
+    getCustomerFromGateway,
+    getSubscriptionInGateway
 }
 
