@@ -12,7 +12,6 @@ const pagBankheaders = {
 }
 
 const createPlanInGateway = async ({id, nome, preco, month_amount, description}) => {
-    let data;
     if (preco > 1.0) {
         console.log("Creating plan in gateway: " + nome)
         const body = {
@@ -28,16 +27,15 @@ const createPlanInGateway = async ({id, nome, preco, month_amount, description})
             payment_method: ['CREDIT_CARD', 'BOLETO']
         }
 
-        data = await axios.post(`${config.pagbankurl}/plans`, body, pagBankheaders)
-        console.log(data)
-        return data.data.id
+        const response = await axios.post(`${config.pagbankurl}/plans`, body, pagBankheaders)
+        console.log("createPlanInGateway response data:", JSON.stringify(response.data, null, 2));
+        return response.data.id
     } else {
         throw new Error("Preco do plano deve ser maior do que 1.00")
     }
 };
 
 const updatePlanInGateway = async (gateway_id, {id, nome, preco, month_amount, description}) => {
-    let data;
     if (preco > 1.0) {
         console.log("Updating plan in gateway: " + nome)
         const body = {
@@ -53,8 +51,9 @@ const updatePlanInGateway = async (gateway_id, {id, nome, preco, month_amount, d
             payment_method: ['CREDIT_CARD', 'BOLETO']
         }
 
-        data = await axios.put(`${config.pagbankurl}/plans/${gateway_id}`, body, pagBankheaders)
-        return data.data.id
+        const response = await axios.put(`${config.pagbankurl}/plans/${gateway_id}`, body, pagBankheaders)
+        console.log("updatePlanInGateway response data:", JSON.stringify(response.data, null, 2));
+        return response.data.id
     } else {
         throw new Error("Preco do plano deve ser maior do que 1.00")
     }
@@ -62,12 +61,16 @@ const updatePlanInGateway = async (gateway_id, {id, nome, preco, month_amount, d
 
 const inactivatePlanInGateway = async (plan_id) => {
     console.log(`Inactivating plan in gateway: ${plan_id}`)
-    return await axios.put(`${config.pagbankurl}/plans/${plan_id}/inactivate`, null, pagBankheaders);
+    const response = await axios.put(`${config.pagbankurl}/plans/${plan_id}/inactivate`, null, pagBankheaders);
+    console.log("inactivatePlanInGateway response data:", JSON.stringify(response.data, null, 2));
+    return response.data;
 };
 
 const activatePlanInGateway = async (plan_id) => {
     console.log(`Activating plan in gateway: ${plan_id}`)
-    return await axios.put(`${config.pagbankurl}/plans/${plan_id}/activate`, null, pagBankheaders)
+    const response = await axios.put(`${config.pagbankurl}/plans/${plan_id}/activate`, null, pagBankheaders)
+    console.log("activatePlanInGateway response data:", JSON.stringify(response.data, null, 2));
+    return response.data;
 };
 
 const createCustomerInGateway = async (data) => {
@@ -116,8 +119,10 @@ const createCustomerInGateway = async (data) => {
         }]
     }
 
-    data = await axios.post(`${config.pagbankurl}/customers`, body, pagBankheaders)
-    return data.id
+    console.log("createCustomerData.body:", JSON.stringify(body, null, 2))
+    const response = await axios.post(`${config.pagbankurl}/customers`, body, pagBankheaders)
+    console.log("createCustomerData response data:", JSON.stringify(response.data, null, 2))
+    return response.data.id
 };
 
 const changeCustomerInGateway = async (data, gateway_customer_id) => {
@@ -147,8 +152,10 @@ const changeCustomerInGateway = async (data, gateway_customer_id) => {
         }
     }
 
-    data = await axios.put(`${config.pagbankurl}/customers/${gateway_customer_id}`, body, pagBankheaders)
-    return data.id
+    console.log("changeCustomerInGateway.body:", JSON.stringify(body, null, 2))
+    const response = await axios.put(`${config.pagbankurl}/customers/${gateway_customer_id}`, body, pagBankheaders)
+    console.log("changeCustomerInGateway response data:", JSON.stringify(response.data, null, 2))
+    return response.data.id
 };
 
 const changeCustomerBillingInGateway = async (data, gateway_customer_id) => {
@@ -163,23 +170,24 @@ const changeCustomerBillingInGateway = async (data, gateway_customer_id) => {
         }
     ]
 
-    data = await axios.put(`${config.pagbankurl}/customers/${gateway_customer_id}/billing_info`, body, pagBankheaders)
-    return data.id
+    console.log("changeCustomerBillingInGateway.body:", JSON.stringify(body, null, 2))
+    const response = await axios.put(`${config.pagbankurl}/customers/${gateway_customer_id}/billing_info`, body, pagBankheaders)
+    console.log("changeCustomerBillingInGateway response data:", JSON.stringify(response.data, null, 2))
+    return response.data.id
 };
 
 const getCustomerFromGateway = async (customer_id) => {
     console.log(`Retrieving customer info in gateway: ${customer_id}`)
-    let data
 
-    data = await axios.get(`${config.pagbankurl}/customers/${customer_id}`, body, pagBankheaders)
-    return data
+    const response = await axios.get(`${config.pagbankurl}/customers/${customer_id}`, body, pagBankheaders)
+    console.log("getCustomerFromGateway response data:", JSON.stringify(response.data, null, 2))
+    return response.data
 }
 
 const createSubscriptionInGateway = async (user_id, plan_id, cvv) => {
-    let data;
     console.log(`Creating subscription in gateway for user: ${user_id} and plan: ${plan_id}`)
     const body = {
-        reference_id: plan_id + "_" + user_id,
+        // reference_id: reference_id,
         plan: {
             id: plan_id
         },
@@ -205,18 +213,24 @@ const createSubscriptionInGateway = async (user_id, plan_id, cvv) => {
         ]
     }
 
-    data = await axios.post(`${config.pagbankurl}/subscriptions`, body, pagBankheaders)
-    return data.id
+    console.log("createSubscriptionInGateway.body:", JSON.stringify(body, null, 2))
+    const response = await axios.post(`${config.pagbankurl}/subscriptions`, body, pagBankheaders)
+    console.log("createSubscriptionInGateway response:", JSON.stringify(data, null, 2))
+    return response.data.id
 };
 
 const getSubscriptionInGateway = async (subscription_id) => {
     console.log("Retrieving subscription in gateway: " + subscription_id)
-    return await axios.get(`${config.pagbankurl}/subscriptions/${subscription_id}`, null, pagBankheaders)
+    const response = await axios.get(`${config.pagbankurl}/subscriptions/${subscription_id}`, null, pagBankheaders)
+    console.log("getSubscriptionInGateway response:", JSON.stringify(data, null, 2))
+    return response.data
 };
 
 const cancelSubscriptionInGateway = async (subscription_id) => {
     console.log("Cancelling subscription in gateway: " + subscription_id)
-    return await axios.put(`${config.pagbankurl}/subscriptions/${subscription_id}/cancel`, null, pagBankheaders)
+    const response = await axios.put(`${config.pagbankurl}/subscriptions/${subscription_id}/cancel`, null, pagBankheaders)
+    console.log("cancelSubscriptionInGateway response:", JSON.stringify(data, null, 2))
+    return response.data
 };
 
 const syncPlansInGateway = async (req, res) => {

@@ -12,6 +12,7 @@ const {
   createPlanInGateway,
   inactivatePlanInGateway,
   createCustomerInGateway,
+  createSubscriptionInGateway,
 } = require("./assinatura.gateway.controller");
 
 const PlanAssModel = mongoose.model("PlanoAssinatura", PlanAssSchema);
@@ -409,23 +410,60 @@ async function legacyUpdateUsers() {
 }
 
 async function selectPlanoAssinatura(data) {
-  console.log(data);
+  // console.log(data);
 
   if (data.paymentMethod === "CREDIT_CARD") {
     try {
-      const cust_id = await createCustomerInGateway({
+      const createCustomerData = {
         ...data.customer,
         holder: data.holder,
         card_encrypted: data.card_encrypted,
+      };
+      console.log(
+        "createCustomerData: ",
+        JSON.stringify(createCustomerData, null, 2)
+      );
+      const cust_id = await createCustomerInGateway(createCustomerData);
+
+      console.log("PagBank Customer ID: " + cust_id);
+
+      await UsuarioModel.findByIdAndUpdate(data.userId, {
+        gateway_id: cust_id,
       });
 
-      return cust_id;
+      try {
+        const subscription_id = await createSubscriptionInGateway(
+          cust_id,
+          data.pagbankGatewayId,
+          data.cvv
+        );
+
+        await UsuarioModel.findByIdAndUpdate(data.userId, {
+          subscription_id: subscription_id,
+        });
+
+        return {
+          subscription_id,
+          cust_id,
+          user_id: data.userId,
+        };
+      } catch (e2) {
+        console.log("Create Subcription in Gateway Error:", {
+          e: e2,
+          response: e2.response,
+          eMsg: JSON.stringify(e2?.response?.data, null, 2),
+        });
+        console.log("Error log 2 finished");
+        throw new Error(e2?.response?.data || e);
+      }
     } catch (e) {
       console.log("Create Customer in Gateway Error:", {
-        e: JSON.stringify(e.response.data),
+        e,
+        response: e.response,
+        eMsg: JSON.stringify(e?.response?.data, null, 2),
       });
       console.log("Error log finished");
-      throw new Error(e.response.data);
+      throw new Error(e?.response?.data || e);
     }
   }
 }
