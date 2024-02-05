@@ -109,7 +109,17 @@ const createCustomerInGateway = async (data) => {
         body.billing_info = [{
             type: "CREDIT_CARD",
             card: {
-                encrypted: data.card_encripted
+                encrypted: data.card_encripted,
+                holder: {
+                    name: data.holder.nome,
+                    birth_date: data.holder.data_nascimento,
+                    tax_id: data.holder.cpf_cnpj,
+                    phone: {
+                        country: "55",
+                        area: data.holder.area,
+                        number: data.holder.numero_telefone
+                    }
+                }
             }
         }]
     }
