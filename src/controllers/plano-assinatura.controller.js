@@ -407,6 +407,10 @@ async function legacyUpdateUsers() {
   return true;
 }
 
+async function selectPlanoAssinatura(data) {
+  console.log(data);
+}
+
 // router fns
 
 async function handleGet(req, res) {
@@ -454,6 +458,9 @@ async function handleDelete(req, res) {
 async function handlePost(req, res) {
   return await savePlanoAssinatura(req.body);
 }
+async function handlePostSelect(req, res) {
+  return await selectPlanoAssinatura(req.body);
+}
 
 module.exports = {
   TIPO_FEATURE_VALOR,
@@ -475,4 +482,5 @@ module.exports = {
   handleGetSingle,
   handleDelete,
   handlePost,
+  handlePostSelect,
 };

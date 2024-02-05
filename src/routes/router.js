@@ -15,7 +15,7 @@ const qualificacaoController = require("../controllers/qualificacao.controller")
 const propostaController = require("../controllers/proposta.controller");
 const planAssController = require("../controllers/plano-assinatura.controller");
 const planAssGatewayController = require("../controllers/assinatura.gateway.controller");
-const dashboardController = require("../controllers/dashboard.controller")
+const dashboardController = require("../controllers/dashboard.controller");
 
 // =====================
 // Healthcheck
@@ -127,16 +127,20 @@ app.delete(
   guard([T_PLAN.MA]),
   routeWrapper(planAssController.handleDelete)
 );
+app.post(
+  "/api/select-plano-assinatura",
+  guard([T_PLAN.PF, T_PLAN.PJ]),
+  routeWrapper(planAssController.handlePostSelect)
+);
 
 // =====================
 // Gateway Subscription Plans
 // =====================
 
 app.post(
-    "/api/plano-assinatura/gateway/sync",
-    routeWrapper(planAssGatewayController.syncPlansInGateway)
+  "/api/plano-assinatura/gateway/sync",
+  routeWrapper(planAssGatewayController.syncPlansInGateway)
 );
-
 
 // =====================
 // Personal Data
