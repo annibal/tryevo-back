@@ -11,6 +11,7 @@ const {
   updatePlanInGateway,
   createPlanInGateway,
   inactivatePlanInGateway,
+  createCustomerInGateway,
 } = require("./assinatura.gateway.controller");
 
 const PlanAssModel = mongoose.model("PlanoAssinatura", PlanAssSchema);
@@ -409,6 +410,24 @@ async function legacyUpdateUsers() {
 
 async function selectPlanoAssinatura(data) {
   console.log(data);
+
+  if (data.paymentMethod === "CREDIT_CARD") {
+    try {
+      const cust_id = await createCustomerInGateway({
+        ...data.customer,
+        holder: data.holder,
+        card_encrypted: data.card_encrypted,
+      });
+
+      return cust_id;
+    } catch (e) {
+      console.log("Create Customer in Gateway Error:", {
+        e: JSON.stringify(e.response.data),
+      });
+      console.log("Error log finished");
+      throw new Error(e.response.data);
+    }
+  }
 }
 
 // router fns
