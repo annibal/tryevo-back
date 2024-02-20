@@ -13,6 +13,10 @@ const {
   inactivatePlanInGateway,
   createCustomerInGateway,
   createSubscriptionInGateway,
+  changeCustomerInGateway,
+  cancelSubscriptionInGateway,
+  getCustomerFromGateway,
+  changeCustomerBillingInGateway,
 } = require("./assinatura.gateway.controller");
 
 const PlanAssModel = mongoose.model("PlanoAssinatura", PlanAssSchema);
@@ -412,60 +416,123 @@ async function legacyUpdateUsers() {
 async function selectPlanoAssinatura(data) {
   // console.log(data);
 
-  if (data.paymentMethod === "CREDIT_CARD") {
-    try {
-      const createCustomerData = {
-        ...data.customer,
-        holder: data.holder,
-        card_encrypted: data.card_encrypted,
-      };
-      console.log(
-        "createCustomerData: ",
-        JSON.stringify(createCustomerData, null, 2)
-      );
-      const cust_id = await createCustomerInGateway(createCustomerData);
-
-      console.log("PagBank Customer ID: " + cust_id);
-
-      await UsuarioModel.findByIdAndUpdate(data.userId, {
-        gateway_id: cust_id,
-      });
-
-      try {
-        const subscription_id = await createSubscriptionInGateway(
-          cust_id,
-          data.pagbankGatewayId,
-          data.cvv
-        );
-
-        await UsuarioModel.findByIdAndUpdate(data.userId, {
-          subscription_id: subscription_id,
-        });
-
-        return {
-          subscription_id,
-          cust_id,
-          user_id: data.userId,
-        };
-      } catch (e2) {
-        console.log("Create Subcription in Gateway Error:", {
-          e: e2,
-          response: e2.response,
-          eMsg: JSON.stringify(e2?.response?.data, null, 2),
-        });
-        console.log("Error log 2 finished");
-        throw new Error(e2?.response?.data || e);
-      }
-    } catch (e) {
-      console.log("Create Customer in Gateway Error:", {
-        e,
-        response: e.response,
-        eMsg: JSON.stringify(e?.response?.data, null, 2),
-      });
-      console.log("Error log finished");
-      throw new Error(e?.response?.data || e);
-    }
+  if (!["CREDIT_CARD", "BOLETO"].includes(data.paymentMethod)) {
+    throw new Error(`Método de pagamento "${data.paymentMethod}" inválido`);
   }
+
+  // Prepara dados do usuário no PagSeguro (Customer Gateway)
+
+  const customerData = {
+    ...data.customer,
+    holder: data.holder,
+    card_encrypted: data.card_encrypted,
+  };
+  console.log("customerData: ", JSON.stringify(customerData, null, 2));
+
+  let cust_id;
+
+  if (data.customer_gateway_id) {
+    // Usuário já tem Dados de Registration no PagSeguro
+
+    const currentCustomerGateway = await getCustomerFromGateway(
+      data.customer_gateway_id
+    );
+    const thisUser = await UsuarioModel.findById(data.userId).lean();
+
+    if (currentCustomerGateway.tax_id === data.customer?.cpf_cnpj) {
+      delete customerData.cpf_cnpj;
+
+      cust_id = await changeCustomerInGateway(
+        customerData,
+        data.customer_gateway_id
+      );
+
+      await changeCustomerBillingInGateway(
+        { card_encrypted: data.card_encrypted },
+        cust_id
+      );
+    } else {
+      // Usuário mudou o CPF (ou CNPJ) do pagamento, deve deletar e criar um novo
+      cust_id = await createCustomerInGateway(customerData);
+    }
+
+    // Verifica se já tem Subscription para cancelar a assinatura atual
+
+    if (thisUser.subscription_id) {
+      console.log("will cancel subscription: " + thisUser.subscription_id);
+      const cancelSubscriptionResponse = await cancelSubscriptionInGateway(
+        thisUser.subscription_id
+      );
+      console.log(
+        "cancelSubscriptionResponse: ",
+        JSON.stringify(cancelSubscriptionResponse, null, 2)
+      );
+    }
+  } else {
+    // Cria o usuário no PagSeguro (Customer Gateway)
+
+    cust_id = await createCustomerInGateway(customerData);
+
+    // Atrela o id do Customer Gateway ao usuário no MongoDB
+
+    await UsuarioModel.findByIdAndUpdate(data.userId, {
+      gateway_id: cust_id,
+    });
+  }
+  console.log("PagBank Customer ID: " + cust_id);
+
+  if (data.paymentMethod === "CREDIT_CARD") {
+    // Cria o Subscription, atrelando Plan com Customer
+
+    const subscription_id = await createSubscriptionInGateway(
+      cust_id,
+      data.pagbankGatewayId,
+      data.cvv
+    );
+
+    // Atrela o Subscription ao usuário no MongoDB
+
+    await UsuarioModel.findByIdAndUpdate(data.userId, {
+      subscription_id: subscription_id,
+      plano: data.planAssId,
+    });
+
+    return {
+      subscription_id,
+      cust_id,
+      user_id: data.userId,
+    };
+  }
+
+  if (data.paymentMethod === "BOLETO") {
+    throw new Error("Pagamento por Boleto não aceito ainda");
+  }
+}
+
+async function downgradePlanoAssinatura(data) {
+  if (!data?.currentSubscriptionId) {
+    throw new Error(
+      "Erro ao fazer downgrade do plano: Assinatura atual não encontrada"
+    );
+  }
+  if (!data?.tipoUsuario) {
+    throw new Error(
+      "Erro ao fazer downgrade do plano: Impossível definir se usuário é PF ou PJ"
+    );
+  }
+  if (!data?.userId) {
+    throw new Error("Erro ao fazer downgrade do plano: Usuário não encontrado");
+  }
+
+  await cancelSubscriptionInGateway(data.currentSubscriptionId);
+
+  const defaultPlan = await showDefaultPlanoAssinatura(data.tipoUsuario);
+
+  await UsuarioModel.findByIdAndUpdate(data.userId, {
+    plano: defaultPlan._id,
+  });
+
+  return true;
 }
 
 // router fns
@@ -518,6 +585,13 @@ async function handlePost(req, res) {
 async function handlePostSelect(req, res) {
   return await selectPlanoAssinatura(req.body);
 }
+async function handlePostDowngrade(req, res) {
+  return await downgradePlanoAssinatura({
+    currentSubscriptionId: req.usuario?.subscription_id,
+    tipoUsuario: req.usuario?.plano?.tipo,
+    userId: req.usuario?._id,
+  });
+}
 
 module.exports = {
   TIPO_FEATURE_VALOR,
@@ -530,6 +604,7 @@ module.exports = {
   listFeatures,
   savePlanoAssinatura,
   deletePlanoAssinatura,
+  downgradePlanoAssinatura,
 
   legacyUpdateUsers,
 
@@ -540,4 +615,5 @@ module.exports = {
   handleDelete,
   handlePost,
   handlePostSelect,
+  handlePostDowngrade,
 };

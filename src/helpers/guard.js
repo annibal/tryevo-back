@@ -18,12 +18,17 @@ const parseUser = (decodedToken) => {
     nome: decodedToken.plano?.nome,
     tipo: decodedToken.plano?.tipo,
     features: decodedToken.plano?.features || {},
+    modosDePagamento: decodedToken.plano?.modosDePagamento || [],
   };
 
   return {
     _id: decodedToken._id,
     email: decodedToken.email,
     plano,
+    planoExpirado: decodedToken.planoExpirado,
+    subscriptionStatus: decodedToken.subscriptionStatus,
+    gateway_id: decodedToken.gateway_id,
+    subscription_id: decodedToken.subscription_id,
     isMasterAdmin: !!plano.features[FEATS.ADMIN],
     createdAt: decodedToken.createdAt,
     updatedAt: decodedToken.updatedAt,

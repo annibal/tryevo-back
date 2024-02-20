@@ -9,7 +9,17 @@ const UsuarioSchema = require("../schemas/usuario.schema");
 const PFSchema = require("../schemas/pf.schema");
 const PJSchema = require("../schemas/pj.schema");
 const { sendEmail, EMAIL_TYPES } = require("./sendEmail");
-const { showPlanoAssinatura, showDefaultPlanoAssinatura, listPlanosAssinatura } = require("./plano-assinatura.controller");
+const {
+  showPlanoAssinatura,
+  showDefaultPlanoAssinatura,
+  listPlanosAssinatura,
+} = require("./plano-assinatura.controller");
+const {
+  getSubscriptionInGateway,
+  getCustomerFromGateway,
+  getSubscriptionInvoicesInGateway,
+  getSubscriptionPaymentInGateway,
+} = require("./assinatura.gateway.controller");
 
 const UsuarioModel = mongoose.model("Usuario", UsuarioSchema);
 const PFModel = mongoose.model("PF", PFSchema);
@@ -30,16 +40,24 @@ const getAuthResponse = (usuarioObj, withToken = true) => {
     _id: usuarioObj.plano?._id || usuarioObj.plano,
     nome: usuarioObj.plano?.nome,
     tipo: usuarioObj.plano?.tipo,
-    features: (usuarioObj.plano?.features || []).reduce((all, feat) => ({
-      ...all,
-      [feat.chave]: feat.valor
-    }), {})
-  }
+    modosDePagamento: usuarioObj.plano?.modosDePagamento,
+    features: (usuarioObj.plano?.features || []).reduce(
+      (all, feat) => ({
+        ...all,
+        [feat.chave]: feat.valor,
+      }),
+      {}
+    ),
+  };
 
   const data = {
     _id: usuarioObj._id,
     email: usuarioObj.email,
+    gateway_id: usuarioObj.gateway_id,
+    subscription_id: usuarioObj.subscription_id,
     plano: objPlano,
+    planoExpirado: usuarioObj.planoExpirado,
+    subscriptionStatus: usuarioObj.subscriptionStatus,
   };
   if (withToken) {
     data.token = jwt.sign(data, config.jwtSecret, {
@@ -59,12 +77,29 @@ exports.login = async (req, res) => {
 
   const isSenhaOk = await comparePassword(senha, usuarioObj.senha);
   if (!isSenhaOk) throw new Error("Senha inválida");
-  
+
   const objPlanAss = await showPlanoAssinatura(usuarioObj.plano);
   if (objPlanAss) {
-    usuarioObj.plano = objPlanAss
+    usuarioObj.plano = objPlanAss;
   } else {
-    throw new Error("Plano de Assinatura inválido")
+    throw new Error("Plano de Assinatura inválido");
+  }
+  
+  usuarioObj.subscriptionStatus = "?";
+
+  if (usuarioObj.subscription_id) {
+    const subscription = await getSubscriptionInGateway(
+      usuarioObj.subscription_id
+    );
+    console.log('subscription :>> ', subscription);
+
+    usuarioObj.subscriptionStatus = subscription?.status;
+
+    if (subscription && subscription?.status !== "ACTIVE") {
+      const defaultPlan = await showDefaultPlanoAssinatura(objPlanAss.tipo);
+      usuarioObj.plano = defaultPlan;
+      usuarioObj.planoExpirado = true;
+    }
   }
 
   return getAuthResponse(usuarioObj);
@@ -84,15 +119,19 @@ exports.register = async (req, res) => {
   if (isEmpresa) {
     objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PJ);
     if (!objPlanAss) {
-      throw new Error("Nenhum plano de assinatura Padrão para Empresas cadastrado");
+      throw new Error(
+        "Nenhum plano de assinatura Padrão para Empresas cadastrado"
+      );
     }
-    data.plano = objPlanAss._id
+    data.plano = objPlanAss._id;
   } else {
     objPlanAss = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.PF);
     if (!objPlanAss) {
-      throw new Error("Nenhum plano de assinatura Padrão para Candidatos cadastrado");
+      throw new Error(
+        "Nenhum plano de assinatura Padrão para Candidatos cadastrado"
+      );
     }
-    data.plano = objPlanAss._id
+    data.plano = objPlanAss._id;
   }
 
   const usuarioObj = await UsuarioModel.create(data);
@@ -106,7 +145,7 @@ exports.register = async (req, res) => {
 exports.updatePlano = async (req, res) => {
   const { id, plano } = req.body;
 
-  const objPlanAss = await showPlanoAssinatura(plano)
+  const objPlanAss = await showPlanoAssinatura(plano);
   if (!objPlanAss) {
     throw new Error(`Plano inválido "${plano}"`);
   }
@@ -116,7 +155,8 @@ exports.updatePlano = async (req, res) => {
     { plano },
     { new: true, runValidators: true }
   );
-  if (!usuarioObj) throw new Error("Erro ao atualizar o plano de assinatura do usuário");
+  if (!usuarioObj)
+    throw new Error("Erro ao atualizar o plano de assinatura do usuário");
 
   return getAuthResponse(usuarioObj);
 };
@@ -129,9 +169,11 @@ exports.elevate = async (req, res) => {
   if (masterpass !== "tryevo_master_password")
     throw new Error("Senha mestre errada");
 
-  const objPlanAssMA = await showDefaultPlanoAssinatura(TIPO_PLANO_ASSINATURA.MA);
+  const objPlanAssMA = await showDefaultPlanoAssinatura(
+    TIPO_PLANO_ASSINATURA.MA
+  );
   if (objPlanAssMA) {
-    throw new Error("Plano de Assinatura padrão para Admin não encontrado")
+    throw new Error("Plano de Assinatura padrão para Admin não encontrado");
   }
 
   const usuarioObj = await UsuarioModel.findByIdAndUpdate(
@@ -154,9 +196,11 @@ exports.changeAccountType = async (req, res) => {
   if (tipo === "PF" || tipo === "PJ") {
     const objPlanAss = await showDefaultPlanoAssinatura(tipo);
     if (!objPlanAss) {
-      throw new Error(`Plano de Assinatura padrão para "${tipo}" não encontrado`)
+      throw new Error(
+        `Plano de Assinatura padrão para "${tipo}" não encontrado`
+      );
     }
-    plano = objPlanAss._id
+    plano = objPlanAss._id;
   } else {
     throw new Error(`Tipo inválido "${tipo}" ao alterar conta`);
   }
@@ -178,16 +222,35 @@ exports.getSelf = async (req, res) => {
   const data = {
     _id: usuario._id,
     email: usuario.email,
+    gateway_id: usuario.gateway_id,
+    subscription_id: usuario.subscription_id,
     plano: usuario.plano,
     createdAt: usuario.createdAt,
     updatedAt: usuario.updatedAt,
   };
-  
+
+  data.subscriptionStatus = "?";
+
   const objPlanAss = await showPlanoAssinatura(usuario.plano);
   if (objPlanAss) {
-    data.plano = objPlanAss
+    data.plano = objPlanAss;
   }
   
+  if (usuario.subscription_id) {
+    const subscription = await getSubscriptionInGateway(
+      usuario.subscription_id
+    );
+    console.log('subscription :>> ', subscription);
+
+    data.subscriptionStatus = subscription?.status;
+
+    if (subscription && subscription?.status !== "ACTIVE") {
+      const defaultPlan = await showDefaultPlanoAssinatura(objPlanAss.tipo);
+      data.plano = defaultPlan;
+      data.planoExpirado = true;
+    }
+  }
+
   return getAuthResponse(data, false);
 };
 
@@ -254,7 +317,7 @@ exports.getSingleUser = async (req, res) => {
 
   const objPlanAss = await showPlanoAssinatura(data?.plano);
   if (data && objPlanAss) {
-    data.plano = objPlanAss
+    data.plano = objPlanAss;
   }
   return data;
 };
@@ -279,15 +342,15 @@ exports.allUsers = async (req, res) => {
     .limit(to - from)
     .lean()
     .exec();
-    
+
   const planosAss = await listPlanosAssinatura();
-  data = data.map(user => {
-    const planAss = planosAss.data.find(p => p._id == user.plano);
+  data = data.map((user) => {
+    const planAss = planosAss.data.find((p) => p._id == user.plano);
     if (planAss) {
       return {
         ...user,
         plano: planAss,
-      }
+      };
     }
     return user;
   });
@@ -438,4 +501,37 @@ exports.remocaoTotal = async (req, res) => {
     await fnRemocaoDados(req.usuario?._id, req.usuario.email);
   } catch (e) {}
   return await UsuarioModel.findByIdAndDelete(req.usuario?._id);
+};
+
+// subscription data
+
+exports.getInfoSubscription = async (req, res) => {
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
+  const subscription_id = req.usuario.subscription_id;
+  if (!subscription_id) throw new Error("Usuário não tem Assinatura ativa");
+
+  return await getSubscriptionInGateway(subscription_id);
+};
+
+exports.getInfoSubscriptionInvoices = async (req, res) => {
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
+  const subscription_id = req.usuario.subscription_id;
+  if (!subscription_id) throw new Error("Usuário não tem Assinatura ativa");
+  
+  return await getSubscriptionInvoicesInGateway(subscription_id);
+};
+
+exports.getInfoInvoicePayments = async (req, res) => {
+  if (!req.params?.invoiceId) throw new Error("Invoice não informada");
+  return await getSubscriptionPaymentInGateway(req.params.invoiceId);
+};
+
+// pagbank customer gateway data
+
+exports.getInfoCustomer = async (req, res) => {
+  if (!req.usuario?._id) throw new Error("Usuário não encontrado na sessão");
+  const gateway_id = req.usuario.gateway_id;
+  if (!gateway_id) throw new Error("Usuário não tem Dados de Pagamento");
+
+  return await getCustomerFromGateway(gateway_id);
 };

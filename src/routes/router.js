@@ -99,6 +99,26 @@ app.post(
   "/api/auth/forgot-password-reset-with-code",
   routeWrapper(authController.forgotPasswordResetWithCode)
 );
+app.get(
+  "/api/auth/info-subscription",
+  guard(),
+  routeWrapper(authController.getInfoSubscription)
+);
+app.get(
+  "/api/auth/info-subscription-invoices",
+  guard(),
+  routeWrapper(authController.getInfoSubscriptionInvoices)
+);
+app.get(
+  "/api/auth/info-invoice-payment/:invoiceId",
+  guard(),
+  routeWrapper(authController.getInfoInvoicePayments)
+);
+app.get(
+  "/api/auth/info-customer",
+  guard(),
+  routeWrapper(authController.getInfoCustomer)
+);
 
 // =====================
 // Subscription Plans
@@ -131,6 +151,11 @@ app.post(
   "/api/select-plano-assinatura",
   guard([T_PLAN.PF, T_PLAN.PJ]),
   routeWrapper(planAssController.handlePostSelect)
+);
+app.post(
+  "/api/plano-assinatura-downgrade",
+  guard([T_PLAN.PF, T_PLAN.PJ]),
+  routeWrapper(planAssController.handlePostDowngrade)
 );
 
 // =====================
