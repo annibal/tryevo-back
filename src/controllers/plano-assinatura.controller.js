@@ -510,10 +510,13 @@ async function selectPlanoAssinatura(data) {
 }
 
 async function downgradePlanoAssinatura(data) {
-  if (!data?.currentSubscriptionId) {
-    throw new Error(
-      "Erro ao fazer downgrade do plano: Assinatura atual não encontrada"
-    );
+  if (data?.currentSubscriptionId) {
+    await cancelSubscriptionInGateway(data.currentSubscriptionId);
+    // try {
+    // }
+    // throw new Error(
+    //   "Erro ao fazer downgrade do plano: Assinatura atual não encontrada"
+    // );
   }
   if (!data?.tipoUsuario) {
     throw new Error(
@@ -524,7 +527,6 @@ async function downgradePlanoAssinatura(data) {
     throw new Error("Erro ao fazer downgrade do plano: Usuário não encontrado");
   }
 
-  await cancelSubscriptionInGateway(data.currentSubscriptionId);
 
   const defaultPlan = await showDefaultPlanoAssinatura(data.tipoUsuario);
 
