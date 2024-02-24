@@ -251,7 +251,9 @@ exports.getSelf = async (req, res) => {
     }
   }
 
-  return getAuthResponse(data, false);
+  const withToken = !!req.query?.withToken
+
+  return getAuthResponse(data, withToken);
 };
 
 exports.deleteSelf = async (req, res) => {

@@ -206,7 +206,15 @@ exports.postPF = async (req, res) => {
     data.endereco = {};
     if (endereco.cep) data.endereco.cep = endereco.cep.replace(/[^0-9]/gi, "");
     if (endereco.pais) data.endereco.pais = endereco.pais;
-    if (endereco.estado) data.endereco.estado = endereco.estado;
+    if (endereco.estado) {
+      if (typeof endereco.estado !== "string") {
+        throw new Error("Endereço deve ser texto");
+      }
+      if (endereco.estado.length !== 2) {
+        throw new Error("Endereço deve ser uma sigla de dois caracteres");
+      }
+      data.endereco.estado = endereco.estado.toUpperCase();
+    }
     if (endereco.cidade) data.endereco.cidade = endereco.cidade;
     if (endereco.bairro) data.endereco.bairro = endereco.bairro;
     if (endereco.rua) data.endereco.rua = endereco.rua;
@@ -552,7 +560,15 @@ exports.postPJ = async (req, res) => {
     data.endereco = {};
     if (endereco.cep) data.endereco.cep = endereco.cep.replace(/[^0-9]/gi, "");
     if (endereco.pais) data.endereco.pais = endereco.pais;
-    if (endereco.estado) data.endereco.estado = endereco.estado;
+    if (endereco.estado) {
+      if (typeof endereco.estado !== "string") {
+        throw new Error("Endereço deve ser texto");
+      }
+      if (endereco.estado.length !== 2) {
+        throw new Error("Endereço deve ser uma sigla de dois caracteres");
+      }
+      data.endereco.estado = endereco.estado.toUpperCase();
+    }
     if (endereco.cidade) data.endereco.cidade = endereco.cidade;
     if (endereco.bairro) data.endereco.bairro = endereco.bairro;
     if (endereco.rua) data.endereco.rua = endereco.rua;
