@@ -1,6 +1,7 @@
 const config = require("../config");
 const mongoose = require("mongoose");
 const axios = require("axios");
+const _ = require("lodash");
 const precopag = require("../helpers/precoformater");
 
 const PlanAssSchema = require("../schemas/plano-assinatura.schema");
@@ -246,7 +247,7 @@ const createCustomerInGateway = async (data) => {
         card: {
           encrypted: data.card_encrypted,
           holder: {
-            name: data.holder.nome,
+            name: _.deburr(data.holder.nome).toUpperCase(),
             birth_date: data.holder.data_nascimento,
             tax_id: data.holder.cpf_cnpj,
             phone: {
