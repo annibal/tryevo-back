@@ -420,93 +420,141 @@ async function selectPlanoAssinatura(data) {
     throw new Error(`Método de pagamento "${data.paymentMethod}" inválido`);
   }
 
+  const isCreditCart = data.paymentMethod === "CREDIT_CARD";
+  const isBoleto = data.paymentMethod === "BOLETO";
+
   // Prepara dados do usuário no PagSeguro (Customer Gateway)
 
   const customerData = {
     ...data.customer,
-    holder: data.holder,
-    card_encrypted: data.card_encrypted,
+    holder: undefined,
+    card_encrypted: undefined,
   };
-  console.log("customerData: ", JSON.stringify(customerData, null, 2));
+
+  if (isCreditCart) {
+    customerData.holder = data.holder;
+    customerData.card_encrypted = data.card_encrypted;
+  }
+
+  console.log(">: customerData: ", JSON.stringify(customerData, null, 2));
 
   let cust_id;
 
+  // se Usuário já tem Customer (Dados de Registration) no PagSeguro
+  console.log(">: verificar se usuario possui customer");
   if (data.customer_gateway_id) {
-    // Usuário já tem Dados de Registration no PagSeguro
+    console.log(
+      `>>: usuario ja possui customer_gateway_id: "${data.customer_gateway_id}"`
+    );
 
     const currentCustomerGateway = await getCustomerFromGateway(
       data.customer_gateway_id
     );
     const thisUser = await UsuarioModel.findById(data.userId).lean();
 
+    console.log(`>>: verificar tax_id contra cpf_cnpj`);
     if (currentCustomerGateway.tax_id === data.customer?.cpf_cnpj) {
+      console.log(
+        `>>>: mesmo tax_id==cpf_cnpj: "${currentCustomerGateway.tax_id}", atualizando dados`
+      );
       delete customerData.cpf_cnpj;
 
       cust_id = await changeCustomerInGateway(
         customerData,
         data.customer_gateway_id
       );
+      console.log(`>>>: cust_id: "${cust_id}"`);
 
-      await changeCustomerBillingInGateway(
-        { card_encrypted: data.card_encrypted },
-        cust_id
-      );
+      if (isCreditCart) {
+        console.log(`>>>>: change billing`);
+        await changeCustomerBillingInGateway(
+          { card_encrypted: data.card_encrypted },
+          cust_id
+        );
+      }
     } else {
       // Usuário mudou o CPF (ou CNPJ) do pagamento, deve deletar e criar um novo
+
+      // ... teoricamente deleta o customer do usuario atual, na vdd so ignora
+
+      console.log(
+        [
+          `>>>: recebeu cpf_cnpj="${data.customer?.cpf_cnpj}",`,
+          `customer.tax_id="${currentCustomerGateway.tax_id}",`,
+          `criando novo customer in gateway`,
+        ].join(" ")
+      );
+
       cust_id = await createCustomerInGateway(customerData);
+
+      console.log(`>>>: novo cust_id: "${cust_id}"`);
     }
+    console.log(`>>: end`);
 
     // Verifica se já tem Subscription para cancelar a assinatura atual
 
+    console.log(`>>: verificar subscription_id`);
     if (thisUser.subscription_id) {
-      console.log("will cancel subscription: " + thisUser.subscription_id);
+      console.log(
+        `>>>: subscription existe, cancelando subscription_id: "${thisUser.subscription_id}"`
+      );
       const cancelSubscriptionResponse = await cancelSubscriptionInGateway(
         thisUser.subscription_id
       );
       console.log(
-        "cancelSubscriptionResponse: ",
-        JSON.stringify(cancelSubscriptionResponse, null, 2)
+        ">>>: cancelSubscriptionResponse: ",
+        JSON.stringify(
+          {
+            data: cancelSubscriptionResponse?.data,
+            status: cancelSubscriptionResponse?.status,
+          },
+          null,
+          2
+        )
       );
     }
+    console.log(`>>: end`);
   } else {
-    // Cria o usuário no PagSeguro (Customer Gateway)
+    // Primeira compra - Cria o usuário no PagSeguro (Customer Gateway)
+    console.log(`>>: usuario não possui customer_gateway_id, criando`);
 
     cust_id = await createCustomerInGateway(customerData);
-
-    // Atrela o id do Customer Gateway ao usuário no MongoDB
-
-    await UsuarioModel.findByIdAndUpdate(data.userId, {
-      gateway_id: cust_id,
-    });
+    console.log(`>>: criou cust_id: "${cust_id}"`);
   }
-  console.log("PagBank Customer ID: " + cust_id);
+  console.log(">: end");
 
-  if (data.paymentMethod === "CREDIT_CARD") {
-    // Cria o Subscription, atrelando Plan com Customer
+  // Atrela o id do Customer Gateway ao usuário no MongoDB
 
-    const subscription_id = await createSubscriptionInGateway(
-      cust_id,
-      data.pagbankGatewayId,
-      data.cvv
-    );
+  console.log(
+    `>: atrelando cust_id (novo ou atualizado) ao usuario "${data.userId}"`
+  );
+  await UsuarioModel.findByIdAndUpdate(data.userId, {
+    gateway_id: cust_id,
+  });
+  console.log(`>: atrelou cust_id ao usuario "${data.userId}"`);
 
-    // Atrela o Subscription ao usuário no MongoDB
+  //
 
-    await UsuarioModel.findByIdAndUpdate(data.userId, {
-      subscription_id: subscription_id,
-      plano: data.planAssId,
-    });
+  // Cria o Subscription, atrelando Plan com Customer
 
-    return {
-      subscription_id,
-      cust_id,
-      user_id: data.userId,
-    };
-  }
+  const subscription_id = await createSubscriptionInGateway(
+    cust_id,
+    data.pagbankGatewayId,
+    isCreditCart ? data.cvv : undefined
+  );
 
-  if (data.paymentMethod === "BOLETO") {
-    throw new Error("Pagamento por Boleto não aceito ainda");
-  }
+  // Atrela o Subscription ao usuário no MongoDB
+
+  await UsuarioModel.findByIdAndUpdate(data.userId, {
+    subscription_id: subscription_id,
+    plano: data.planAssId,
+  });
+
+  return {
+    subscription_id,
+    cust_id,
+    user_id: data.userId,
+  };
 }
 
 async function downgradePlanoAssinatura(data) {
@@ -526,7 +574,6 @@ async function downgradePlanoAssinatura(data) {
   if (!data?.userId) {
     throw new Error("Erro ao fazer downgrade do plano: Usuário não encontrado");
   }
-
 
   const defaultPlan = await showDefaultPlanoAssinatura(data.tipoUsuario);
 
